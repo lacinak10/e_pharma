@@ -5,14 +5,14 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ route('manager.medicines.index') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    <x-nav-link :href="route('manager.medicines.index')" :active="request()->routeIs('manager.medicines.index')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                 </div>
@@ -34,20 +34,19 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
+                        <x-dropdown-link :href="route('profile.edit') ?? route("manager.medicines.index") ">
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
-                            @csrf
+    @csrf
+    <x-responsive-nav-link :href="route('logout')"
+        onclick="event.preventDefault(); this.closest('form').submit();">
+        {{ __('Log Out') }}
+    </x-responsive-nav-link>
+</form>
 
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </form>
                     </x-slot>
                 </x-dropdown>
             </div>
@@ -85,15 +84,14 @@
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
+               <form method="POST" action="{{ route('logout') }}">
+    @csrf
+    <x-responsive-nav-link :href="route('logout')"
+        onclick="event.preventDefault(); this.closest('form').submit();">
+        {{ __('Log Out') }}
+    </x-responsive-nav-link>
+</form>
 
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
             </div>
         </div>
     </div>

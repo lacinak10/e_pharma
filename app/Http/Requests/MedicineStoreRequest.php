@@ -6,10 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class MedicineStoreRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()?->isManager() === true;
-    }
 
     public function rules(): array
     {
@@ -17,9 +13,11 @@ class MedicineStoreRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'price' => ['required', 'integer', 'min:0'],
+            'Reference' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:255'],
             'stock' => ['required', 'integer', 'min:0'],
-            'image_url' => ['nullable', 'url', 'max:2048'],
-            'is_active' => ['required', 'boolean'],
+            'alert_threshold' => ['required', 'integer', 'min:0'],
+            'image_url' => ['nullable','image','mimes:jpeg,png,jpg,gif','max:204'],
         ];
     }
 }

@@ -6,14 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MedicineStoreRequest;
 use App\Http\Requests\MedicineUpdateRequest;
 use App\Models\Medicine;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class MedicineController extends Controller
 {
-    public function __construct()
-    {
-        $this->authorizeResource(Medicine::class, 'medicine');
-    }
 
     public function index(Request $request)
     {
@@ -30,7 +27,7 @@ class MedicineController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('manager.medicines.index', compact('medicines', 'q'));
+        return view('admin.medicines.index', compact('medicines', 'q3'));
     }
 
     public function create()
@@ -40,7 +37,24 @@ class MedicineController extends Controller
 
     public function store(MedicineStoreRequest $request)
     {
-        Medicine::create($request->validated());
+
+        $validated = $request->validated();
+
+        if($request->hasFile('image_url')){
+            $validated['image_url'] = Storage::disk('public')->put("medicaments",$request->image_url);
+        }
+
+        if($validated['stock'] >= $validated['alert_threshold']){
+            $validated['status'] = 'En stock';
+        }else if ($validated['stock']== 0){
+            $validated['status'] = 'Épuisé';
+
+        }else{
+        $validated['status'] = 'Stock faible';
+
+        }
+
+        Medicine::create($validated);
 
         return redirect()
             ->route('manager.medicines.index')

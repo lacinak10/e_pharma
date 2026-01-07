@@ -16,6 +16,10 @@ class Medicine extends Model
         'stock',
         'image_url',
         'is_active',
+        'category',
+        'alert_threshold',
+        'Reference',
+        'status'
     ];
 
     protected $casts = [

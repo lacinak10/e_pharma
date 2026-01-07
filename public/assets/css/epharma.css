@@ -1,0 +1,42 @@
+
+        .pharmacy-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+        .upload-box {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-box:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        .medicine-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link:hover {
+            color: #3b82f6;
+        }
+        .mobile-money-option:hover {
+            background-color: #f3f4f6;
+        }
+        .order-status {
+            position: relative;
+        }
+        .order-status::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+        }
+        .order-status.completed::before {
+            background-color: #10b981;
+        }
+        .order-status.cancelled::before {
+            background-color: #ef4444;
+        }

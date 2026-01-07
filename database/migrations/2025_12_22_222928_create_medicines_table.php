@@ -19,6 +19,14 @@ return new class extends Migration
 
             $table->unsignedInteger('stock')->default(0);
 
+            $table->string('category');
+
+            $table->string('status');
+
+            $table->string('Reference');
+
+            $table->unsignedInteger('alert_threshold')->default(0);
+
             $table->string('image_url')->nullable();
 
             $table->boolean('is_active')->default(true)->index();
