@@ -40,14 +40,29 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            @foreach(range(1, 4) as $i)
-                @include('components.cardMedicament', [
-                    'title' => 'Doliprane 1000mg',
-                    'description' => 'Boite de 16 comprimés',
-                    'price' => '2 550',
-                    'status' => 'En Stock',
-                ])
-            @endforeach
+
+            @forelse ($medicines as $medicine)
+
+             @include('components.cardMedicament', [
+                        'title' => $medicine->name,
+                        'description' => $medicine->description,
+                        'price' =>  $medicine->price,
+                        'status' =>  $medicine->status,
+                    ])
+
+            @empty
+
+                @foreach(range(1, 4) as $i)
+                    @include('components.cardMedicament', [
+                        'title' => 'Doliprane 1000mg',
+                        'description' => 'Boite de 16 comprimés',
+                        'price' => '2 550',
+                        'status' => 'En Stock',
+                    ])
+                @endforeach
+            @endforelse
+
+
         </div>
 
         <div class="mt-10 text-center">

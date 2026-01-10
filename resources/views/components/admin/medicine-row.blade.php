@@ -16,7 +16,7 @@
         <div class="flex items-center">
             <div class="flex-shrink-0 h-10 w-10">
                 <img class="h-10 w-10 rounded object-cover"
-                     src="{{ $medicine->image_url ?? 'https://picsum.photos/40?random='.$medicine->id }}"
+                     src="/storage/{{ $medicine->image_url ?? 'https://picsum.photos/40?random='.$medicine->id }}"
                      alt="{{ $medicine->name }}">
             </div>
             <div class="ml-4">

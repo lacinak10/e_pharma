@@ -2,34 +2,33 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Medicine extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
+        'category_id',
         'name',
         'description',
         'price',
         'stock',
+        'status',
+        'reference',
+        'alert_threshold',
         'image_url',
         'is_active',
-        'category',
-        'alert_threshold',
-        'Reference',
-        'status'
     ];
 
     protected $casts = [
         'price' => 'integer',
         'stock' => 'integer',
+        'alert_threshold' => 'integer',
         'is_active' => 'boolean',
     ];
 
-    public function orderItems()
+    public function category(): BelongsTo
     {
-        return $this->hasMany(OrderItem::class, 'medicine_id');
+        return $this->belongsTo(Category::class);
     }
 }

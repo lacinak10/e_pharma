@@ -27,7 +27,7 @@ class MedicineController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.medicines.index', compact('medicines', 'q3'));
+        return view('admin.medicines.index', compact('medicines', 'q'));
     }
 
     public function create()

@@ -11,6 +11,13 @@ return new class extends Migration
         Schema::create('medicines', function (Blueprint $table) {
             $table->id();
 
+            // Relation catégorie
+            $table->foreignId('category_id')
+                ->constrained('categories')
+                ->cascadeOnUpdate()
+                ->restrictOnDelete()
+                ->index();
+
             $table->string('name')->index();
             $table->text('description')->nullable();
 
@@ -19,11 +26,11 @@ return new class extends Migration
 
             $table->unsignedInteger('stock')->default(0);
 
-            $table->string('category');
+            // Exemple: active/inactive/out_of_stock...
+            $table->string('status')->default('active')->index();
 
-            $table->string('status');
-
-            $table->string('Reference');
+            // Référence interne
+            $table->string('reference')->unique()->index();
 
             $table->unsignedInteger('alert_threshold')->default(0);
 
@@ -32,6 +39,10 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->index();
 
             $table->timestamps();
+
+            // Index utiles
+            $table->index(['category_id', 'is_active']);
+            $table->index(['name', 'is_active']);
         });
     }
 

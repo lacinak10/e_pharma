@@ -1,7 +1,7 @@
 @props([
     'label' => '',
     'value' => '',
-    'icon' => 'fas fa-circle',
+    'icon' => 'fa-solid fa-circle',
     'valueClass' => 'text-primary',
     'iconWrapClass' => 'bg-blue-100 text-primary',
 ])

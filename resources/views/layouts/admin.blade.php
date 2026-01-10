@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>@yield('title', 'E-PHARMA - Tableau de Bord Pharmacie')</title>
-    <meta name="description" content="@yield('description', 'Tableau de bord pour les pharmacies partenaires E-PHARMA')">
+    <title>@yield('title', 'E-PHARMA - Admin')</title>
+    <meta name="description" content="@yield('description', 'Espace Admin E-PHARMA')">
 
-    {{-- Tailwind CDN + config couleurs --}}
+    {{-- Tailwind CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,7 +25,10 @@
     </script>
 
     {{-- FontAwesome --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    {{-- Alpine (dropdown, etc.) --}}
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     @yield('head')
 </head>
@@ -33,7 +36,7 @@
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen">
 
-    {{-- Sidebar --}}
+    {{-- Sidebar (role-aware) --}}
     <x-admin.sidebar />
 
     {{-- Main --}}
@@ -46,54 +49,38 @@
     </div>
 </div>
 
-{{-- Modals (stack) --}}
 @stack('modals')
 
 <script>
-    // Sidebar mobile toggle
     document.addEventListener('DOMContentLoaded', () => {
         const btn = document.getElementById('mobile-sidebar-button');
         const sidebar = document.getElementById('mobile-sidebar');
         const overlay = document.getElementById('mobile-sidebar-overlay');
 
-        function openSidebar() {
-            if (!sidebar || !overlay) return;
-            sidebar.classList.remove('hidden');
-            overlay.classList.remove('hidden');
-        }
+        const open = () => { sidebar?.classList.remove('hidden'); overlay?.classList.remove('hidden'); };
+        const close = () => { sidebar?.classList.add('hidden'); overlay?.classList.add('hidden'); };
 
-        function closeSidebar() {
-            if (!sidebar || !overlay) return;
-            sidebar.classList.add('hidden');
-            overlay.classList.add('hidden');
-        }
+        btn?.addEventListener('click', open);
+        overlay?.addEventListener('click', close);
 
-        btn?.addEventListener('click', openSidebar);
-        overlay?.addEventListener('click', closeSidebar);
-
-        // Modal toggles (generic)
         document.querySelectorAll('[data-modal-open]').forEach(el => {
             el.addEventListener('click', () => {
                 const id = el.getAttribute('data-modal-open');
-                const modal = document.getElementById(id);
-                modal?.classList.remove('hidden');
+                document.getElementById(id)?.classList.remove('hidden');
             });
         });
 
         document.querySelectorAll('[data-modal-close]').forEach(el => {
             el.addEventListener('click', () => {
                 const id = el.getAttribute('data-modal-close');
-                const modal = document.getElementById(id);
-                modal?.classList.add('hidden');
+                document.getElementById(id)?.classList.add('hidden');
             });
         });
 
-        // Close modal on overlay click
-        document.querySelectorAll('[data-modal-overlay]').forEach(overlayEl => {
-            overlayEl.addEventListener('click', () => {
-                const id = overlayEl.getAttribute('data-modal-overlay');
-                const modal = document.getElementById(id);
-                modal?.classList.add('hidden');
+        document.querySelectorAll('[data-modal-overlay]').forEach(el => {
+            el.addEventListener('click', () => {
+                const id = el.getAttribute('data-modal-overlay');
+                document.getElementById(id)?.classList.add('hidden');
             });
         });
     });
