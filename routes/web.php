@@ -17,6 +17,17 @@ use App\Http\Controllers\Store\CheckoutController;
 use App\Http\Controllers\Store\OrderController;
 use App\Http\Controllers\Store\PrescriptionController;
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Manager\StockController;
+use App\Http\Controllers\Manager\AssignmentController;
+use App\Http\Controllers\Manager\DeliveryController;
+use App\Http\Controllers\Manager\CustomerController;
+use App\Http\Controllers\Manager\CourierController;
+
+use App\Http\Controllers\Courier\MyOrderController;
+
 //Page web
 
 Route::name('store.')->group(function () {
@@ -24,6 +35,7 @@ Route::name('store.')->group(function () {
 
     Route::get('/medicaments', [MedicineController::class, 'index'])->name('medicines.index');
     Route::get('/medicaments/{medicine}', [MedicineController::class, 'show'])->name('medicines.show');
+
 
     // Cart (session)
     Route::get('/panier', [CartController::class, 'index'])->name('cart.index');
@@ -54,59 +66,60 @@ Route::resource('catalog', CatalogController::class)
 
 // Auth (Breeze)
 require __DIR__.'/auth.php';
+Route::middleware(['auth'])->prefix('admin')->group(function () {
 
-Route::middleware(['auth'])->group(function () {
+    // Dashboard (manager + courier)
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-    // // Panier (client) - on bind {cart} => Medicine via parameters()
-    // Route::resource('cart', CartController::class)
-    //     ->only(['index', 'store', 'update', 'destroy'])
-    //     ->parameters(['cart' => 'medicine']);
+    // Compte (commun)
+    Route::get('profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+    Route::put('profile', [ProfileController::class, 'update'])->name('admin.profile.update');
 
-    // // Espace Client
-    // Route::prefix('client')
-    //     ->name('client.')
-    //     ->middleware(EnsureRole::class . ':client')
-    //     ->group(function () {
-    //         Route::resource('orders', ClientOrderController::class)
-    //             ->only(['index', 'show', 'store', 'destroy']);
-    //     });
+    Route::get('settings', [SettingsController::class, 'edit'])->name('admin.settings.edit');
+    Route::put('settings', [SettingsController::class, 'update'])->name('admin.settings.update');
 
-    // Espace Gestionnaire
-    Route::prefix('admin')
-        ->name('manager.')
-        ->middleware(EnsureRole::class . ':manager')
-        ->group(function () {
-            Route::resource('medicines', MedicineController::class);
+    // ====== MANAGER ======
+    Route::middleware(EnsureRole::class . ':manager')->name('manager.')->group(function () {
 
-            Route::resource('orders', OrderController::class)
-                ->only(['index', 'show', 'update']); // update = affectation livreur
-        });
+        // Catalogue
+        Route::resource('medicines', ManagerMedicineController::class);
+        Route::patch('medicines/{medicine}/toggle', [ManagerMedicineController::class, 'toggle'])
+    ->name('medicines.toggle');
 
-        Route::prefix('admin')
-    ->name('manager.')
-    // ->middleware(['auth'])  // si besoin
-    ->group(function () {
+
         Route::resource('categories', CategoryController::class);
+
+        // Stock (pages dédiées)
+        Route::get('stock', [StockController::class, 'index'])->name('stock.index');
+        Route::get('stock/{medicine}/edit', [StockController::class, 'edit'])->name('stock.edit');
+        Route::put('stock/{medicine}', [StockController::class, 'update'])->name('stock.update');
+
+        // Commandes & livraisons
+        Route::resource('orders', ManagerOrderController::class)->only(['index','show','update']);
+
+        Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+        Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+
+        Route::get('deliveries', [DeliveryController::class, 'index'])->name('deliveries.index');
+
+        // Utilisateurs
+        Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::resource('couriers', CourierController::class); // index, create, store, show, edit, update, destroy
+
     });
 
-    Route::get('/admin/dashboard', function () {
-    return  view('admin.dashboard');
-})->name("dashboard");
+    // ====== COURIER ======
+    Route::middleware(EnsureRole::class . ':courier')->name('courier.')->group(function () {
 
+        // Sidebar: /admin/my-orders
+        Route::get('my-orders', [MyOrderController::class, 'index'])->name('my_orders.index');
+        Route::get('my-orders/{order}', [MyOrderController::class, 'show'])->name('my_orders.show');
 
+        Route::patch('my-orders/{order}/accept', [MyOrderController::class, 'accept'])->name('my_orders.accept');
+        Route::patch('my-orders/{order}/refuse', [MyOrderController::class, 'refuse'])->name('my_orders.refuse');
 
-    // // Espace Livreur
-    // Route::prefix('courier')
-    //     ->name('courier.')
-    //     ->middleware(EnsureRole::class . ':courier')
-    //     ->group(function () {
-    //         Route::resource('orders', CourierOrderController::class)
-    //             ->only(['index', 'show', 'update']); // update = IN_DELIVERY/DELIVERED
-
-    //         Route::patch('orders/{order}/accept', [CourierOrderController::class, 'accept'])
-    //             ->name('orders.accept');
-
-    //         Route::patch('orders/{order}/refuse', [CourierOrderController::class, 'refuse'])
-    //             ->name('orders.refuse');
-    //     });
+        Route::patch('my-orders/{order}/start', [MyOrderController::class, 'startDelivery'])->name('my_orders.start');
+        Route::patch('my-orders/{order}/delivered', [MyOrderController::class, 'markDelivered'])->name('my_orders.delivered');
+    });
 });

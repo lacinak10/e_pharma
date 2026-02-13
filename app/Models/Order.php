@@ -17,6 +17,8 @@ class Order extends Model
         'delivery_phone',
         'notes',
         'total_amount',
+        'delivery_fee',
+        'subtotal',
         'canceled_at',
         'delivered_at',
     ];
@@ -42,6 +44,9 @@ class Order extends Model
     {
         return $this->hasOne(DeliveryAssignment::class, 'order_id');
     }
+
+    public function user(){ return $this->belongsTo(User::class); }
+
 
     public function getStatusLabelAttribute(): string
     {

@@ -2,83 +2,52 @@
 
 namespace App\Http\Controllers\Manager;
 
-use App\Enums\AssignmentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AssignCourierRequest;
-use App\Models\DeliveryAssignment;
 use App\Models\Order;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Enum;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $q = trim((string)$request->get('q',''));
+        $status = trim((string)$request->get('status',''));
+
         $orders = Order::query()
-            ->with(['client', 'assignment.courier'])
+            ->with(['user:id,name', 'assignment.courier:id,name'])
+            ->when($q !== '', fn($qq) => $qq->whereHas('user', fn($u) => $u->where('name','like',"%{$q}%")))
+            ->when($status !== '', fn($qq) => $qq->where('status',$status))
             ->latest()
-            ->paginate(20);
+            ->paginate(12)
+            ->withQueryString();
 
-        $couriers = User::query()
-            ->where('role', User::ROLE_COURIER)
-            ->orderBy('name')
-            ->get();
-
-        return view('manager.orders.index', compact('orders', 'couriers'));
+        return view('admin.orders.index', compact('orders','q','status'));
     }
 
     public function show(Order $order)
     {
-        $this->authorize('view', $order);
+        $order->load(['user:id,name', 'items.medicine:id,name,price', 'assignment.courier:id,name']);
+        $couriers = User::where('role','courier')->orderBy('name')->get(['id','name']);
 
-        $order->load(['client', 'items.medicine', 'assignment.courier']);
-
-        $couriers = User::query()
-            ->where('role', User::ROLE_COURIER)
-            ->orderBy('name')
-            ->get();
-
-        return view('manager.orders.show', compact('order', 'couriers'));
+        return view('admin.orders.show', compact('order','couriers'));
     }
 
-    /**
-     * Affectation livreur (resource update)
-     */
-    public function update(AssignCourierRequest $request, Order $order)
-    {
-        $this->authorize('assign', $order);
 
-        $data = $request->validated();
+public function update(Request $request, Order $order)
+{
+    $validated = $request->validate([
+        'status' => ['required', new Enum(OrderStatus::class)],
+    ]);
 
-        DB::transaction(function () use ($order, $data) {
-            $order->refresh();
-            $order->load('assignment');
+    $order->update([
+        'status' => OrderStatus::from($validated['status'])
+    ]);
 
-            // blocages
-            if (in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::IN_DELIVERY], true)) {
-                abort(422, 'Impossible d’affecter cette commande (statut non compatible).');
-            }
+    return back()->with('success','Commande mise à jour.');
+}
 
-            if ($order->assignment && $order->assignment->status === AssignmentStatus::ACCEPTED) {
-                abort(422, 'Commande déjà acceptée par un livreur, réaffectation impossible.');
-            }
 
-            DeliveryAssignment::updateOrCreate(
-                ['order_id' => $order->id],
-                [
-                    'courier_id' => (int) $data['courier_id'],
-                    'assigned_by' => auth()->id(),
-                    'status' => AssignmentStatus::ASSIGNED,
-                    'assigned_at' => now(),
-                    'responded_at' => null,
-                    'note' => $data['note'] ?? null,
-                ]
-            );
-
-            $order->update(['status' => OrderStatus::ASSIGNED]);
-        });
-
-        return back()->with('success', 'Commande affectée au livreur.');
-    }
 }

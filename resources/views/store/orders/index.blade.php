@@ -30,7 +30,7 @@
                             <td class="px-6 py-4 font-bold">#{{ $order->id }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600">{{ $order->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-6 py-4 font-extrabold text-gray-900">
-                                {{ number_format((int)$order->total, 0, ',', ' ') }} FCFA
+                                {{ number_format((int)$order->total_amount, 0, ',', ' ') }} FCFA
                             </td>
                             <td class="px-6 py-4">
                                 <x-store.order-status :status="$order->status" />

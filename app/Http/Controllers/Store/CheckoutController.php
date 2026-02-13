@@ -32,9 +32,13 @@ class CheckoutController extends Controller
 
         $data = $request->validate([
             'delivery_address' => ['required','string','min:5','max:255'],
-            'phone' => ['required','string','min:8','max:30'],
+            'delivery_phone' => ['required','string','min:8','max:30'],
             'notes' => ['nullable','string','max:500'],
             'payment_method' => ['required','in:cash,momo,card'],
+            'total_amount' => ['required'],
+            'subtotal' => ['required', 'nullable'],
+            'delivery_fee' =>  ['required', 'nullable']
+
         ]);
 
         return DB::transaction(function () use ($cart, $data) {
@@ -67,11 +71,11 @@ class CheckoutController extends Controller
                 'user_id' => auth()->id(),
                 'status' => 'PENDING_ASSIGNMENT',
                 'delivery_address' => $data['delivery_address'],
-                'phone' => $data['phone'],
+                'delivery_phone' => $data['delivery_phone'],
                 'notes' => $data['notes'] ?? null,
                 'subtotal' => $subtotal,
                 'delivery_fee' => $deliveryFee,
-                'total' => $total,
+                'total_amount' => $total,
                 'payment_method' => $data['payment_method'],
             ]);
 

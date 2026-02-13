@@ -27,7 +27,7 @@
     </td>
 
     <td class="px-6 py-4 whitespace-nowrap">
-        <div class="text-sm text-gray-900">{{ $medicine->category ?? '-' }}</div>
+        <div class="text-sm text-gray-900">{{ $medicine->category->name ?? '-' }}</div>
     </td>
 
     <td class="px-6 py-4 whitespace-nowrap">
@@ -43,17 +43,20 @@
     </td>
 
     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <a href="{{ $editUrl }}" class="text-blue-600 hover:text-blue-900 mr-3" title="Modifier">
-            <i class="fas fa-edit"></i>
-        </a>
+        <a href="{{ route('manager.medicines.show',$medicine->id) }}" class="text-primary hover:text-secondary" title="Voir">
+    <i class="fa-regular fa-eye"></i>
+</a>
 
-        <form method="POST" action="{{ $deleteUrl }}" class="inline">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="text-red-600 hover:text-red-900" title="Supprimer"
-                    onclick="return confirm('Supprimer ce produit ?')">
-                <i class="fas fa-trash"></i>
-            </button>
-        </form>
+<a href="{{ route('manager.medicines.edit',$medicine->id) }}" class="text-gray-700 hover:text-gray-900" title="Modifier">
+    <i class="fa-regular fa-pen-to-square"></i>
+</a>
+
+<form method="POST" action="{{ route('manager.medicines.toggle',$medicine->id) }}" class="inline">
+    @csrf @method('PATCH')
+    <button class="{{ $medicine->is_active ? 'text-danger' : 'text-accent' }}" title="{{ $medicine->is_active ? 'Désactiver' : 'Activer' }}">
+        <i class="fa-solid {{ $medicine->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i>
+    </button>
+</form>
+
     </td>
 </tr>

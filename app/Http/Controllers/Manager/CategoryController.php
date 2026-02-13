@@ -6,113 +6,62 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $q = trim((string) $request->get('q', ''));
+
         $categories = Category::query()
+            ->when($q !== '', fn($query) => $query->where('name','like',"%{$q}%"))
             ->orderBy('name')
-            ->paginate(20);
+            ->paginate(12)
+            ->withQueryString();
 
-        return view('manager.categories.index', compact('categories'));
-    }
-
-    public function create()
-    {
-        return view('manager.categories.create');
+        return view('admin.categories.index', compact('categories','q'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
-            'is_active' => ['nullable', 'boolean'],
+            'name' => ['required','string','max:255','unique:categories,name'],
+            'is_active' => ['nullable','boolean'],
         ]);
 
-        $slugBase = Str::slug($validated['name']);
-        $slug = $this->uniqueSlug($slugBase);
+        $validated['slug'] = Str::slug($validated['name']);
+        $validated['is_active'] = (bool)($validated['is_active'] ?? true);
 
-        $category = Category::create([
-            'name' => $validated['name'],
-            'slug' => $slug,
-            'is_active' => (bool)($validated['is_active'] ?? true),
-        ]);
+        Category::create($validated);
 
-        return redirect()
-            ->route('manager.categories.index')
-            ->with('success', 'Catégorie créée avec succès.');
-    }
-
-    public function show(Category $category)
-    {
-        return view('manager.categories.show', compact('category'));
+        return back()->with('success','Catégorie créée.');
     }
 
     public function edit(Category $category)
     {
-        return view('manager.categories.edit', compact('category'));
+        return view('admin.categories.edit', compact('category'));
     }
 
     public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            'name' => [
-                'required', 'string', 'max:255',
-                Rule::unique('categories', 'name')->ignore($category->id),
-            ],
-            'is_active' => ['nullable', 'boolean'],
+            'name' => ['required','string','max:255','unique:categories,name,'.$category->id],
+            'is_active' => ['nullable','boolean'],
         ]);
 
-        // Si le nom change, on régénère le slug
-        if ($validated['name'] !== $category->name) {
-            $slugBase = Str::slug($validated['name']);
-            $category->slug = $this->uniqueSlug($slugBase, $category->id);
-        }
+        $validated['slug'] = Str::slug($validated['name']);
+        $validated['is_active'] = (bool)($validated['is_active'] ?? true);
 
-        $category->name = $validated['name'];
-        $category->is_active = (bool)($validated['is_active'] ?? $category->is_active);
-        $category->save();
+        $category->update($validated);
 
-        return redirect()
-            ->route('manager.categories.index')
-            ->with('success', 'Catégorie mise à jour avec succès.');
+        return redirect()->route('manager.categories.index')->with('success','Catégorie mise à jour.');
     }
 
     public function destroy(Category $category)
     {
-        // Sécurité: éviter de supprimer une catégorie utilisée par des medicines
-        if (method_exists($category, 'medicines') && $category->medicines()->exists()) {
-            return back()->with('error', 'Impossible de supprimer : cette catégorie est utilisée par des médicaments.');
-        }
+        // UX safe: désactive au lieu de delete (évite FK medicines)
+        $category->update(['is_active' => false]);
 
-        $category->delete();
-
-        return redirect()
-            ->route('manager.categories.index')
-            ->with('success', 'Catégorie supprimée avec succès.');
-    }
-
-    /**
-     * Génère un slug unique.
-     * $ignoreId sert à ignorer l’enregistrement en cours lors d’un update.
-     */
-    private function uniqueSlug(string $base, ?int $ignoreId = null): string
-    {
-        $slug = $base ?: 'categorie';
-        $i = 2;
-
-        while (
-            Category::query()
-                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
-                ->where('slug', $slug)
-                ->exists()
-        ) {
-            $slug = $base . '-' . $i;
-            $i++;
-        }
-
-        return $slug;
+        return back()->with('success','Catégorie désactivée.');
     }
 }

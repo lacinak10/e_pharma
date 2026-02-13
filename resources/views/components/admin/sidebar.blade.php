@@ -43,13 +43,7 @@
                     'icon'   => 'fa-solid fa-tags',
                     'label'  => 'Catégories',
                     'active' => request()->is('admin/categories*'),
-                ],
-                [
-                    'href'   => url('/admin/promotions'),
-                    'icon'   => 'fa-solid fa-percent',
-                    'label'  => 'Promotions',
-                    'active' => request()->is('admin/promotions*'),
-                ],
+                ]
             ],
         ];
 
@@ -89,16 +83,16 @@
                     'active' => request()->is('admin/orders') && request('status') === 'assigned',
                 ],
                 [
-                    'href'   => url('/admin/orders?status=delivering'),
+                    'href'   => url('/admin/orders?status=IN_DELIVERY'),
                     'icon'   => 'fa-solid fa-truck',
                     'label'  => 'En livraison',
-                    'active' => request()->is('admin/orders') && request('status') === 'delivering',
+                    'active' => request()->is('admin/orders') && request('status') === 'IN_DELIVERY',
                 ],
                 [
-                    'href'   => url('/admin/orders?status=delivered'),
+                    'href'   => url('/admin/orders?status=DELIVERED'),
                     'icon'   => 'fa-solid fa-circle-check',
                     'label'  => 'Livrées',
-                    'active' => request()->is('admin/orders') && request('status') === 'delivered',
+                    'active' => request()->is('admin/orders') && request('status') === 'DELIVERED',
                 ],
             ],
         ];
@@ -134,16 +128,16 @@
                     'active' => request()->is('admin/my-orders') && !request('status'),
                 ],
                 [
-                    'href'   => url('/admin/my-orders?status=delivering'),
+                    'href'   => url('/admin/my-orders?status=IN_DELIVERY'),
                     'icon'   => 'fa-solid fa-truck',
                     'label'  => 'En cours',
-                    'active' => request()->is('admin/my-orders') && request('status') === 'delivering',
+                    'active' => request()->is('admin/my-orders') && request('status') === 'IN_DELIVERY',
                 ],
                 [
-                    'href'   => url('/admin/my-orders?status=delivered'),
+                    'href'   => url('/admin/my-orders?status=DELIVERED'),
                     'icon'   => 'fa-solid fa-circle-check',
                     'label'  => 'Historique',
-                    'active' => request()->is('admin/my-orders') && request('status') === 'delivered',
+                    'active' => request()->is('admin/my-orders') && request('status') === 'DELIVERED',
                 ],
             ],
         ];

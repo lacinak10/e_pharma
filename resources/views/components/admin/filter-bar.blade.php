@@ -25,8 +25,8 @@
                 <x-admin.select name="category" class="md:w-56">
                     <option value="">Toutes catégories</option>
                     @foreach($categories as $cat)
-                        <option value="{{ $cat }}" {{ (string)$category === (string)$cat ? 'selected' : '' }}>
-                            {{ $cat }}
+                        <option value="{{ $cat->name }}" {{ (string)$category === (string)$cat->name ? 'selected' : '' }}>
+                            {{ $cat->name }}
                         </option>
                     @endforeach
                 </x-admin.select>

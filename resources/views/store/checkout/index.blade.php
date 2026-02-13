@@ -20,7 +20,7 @@
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-lg font-extrabold">Livraison</h3>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <x-store.input name="phone" label="Téléphone" placeholder="+225 ..." value="{{ old('phone') }}" />
+                    <x-store.input name="delivery_phone" label="Téléphone" placeholder="+225 ..." value="{{ old('delivery_phone') }}" />
                     <x-store.input name="delivery_address" label="Adresse" placeholder="Ex: Cocody Angré, Rue..." value="{{ old('delivery_address') }}" />
                 </div>
                 <div class="mt-4">
@@ -48,6 +48,7 @@
                         Carte
                     </label>
                 </div>
+
                 @error('payment_method') <span class="text-sm text-red-600 mt-2 block">{{ $message }}</span> @enderror
             </div>
         </div>
@@ -79,6 +80,13 @@
                         </div>
                     </div>
                 </div>
+
+                <input type="hidden" name="total_amount" value="{{ $total }}" class="mr-2">
+                <input type="hidden" name="subtotal" value="{{ $subtotal }}" class="mr-2">
+                <input type="hidden" name="delivery_fee" value="{{ $delivery }}" class="mr-2">
+
+
+
 
                 <div class="mt-6">
                     <x-store.button type="submit" variant="primary" class="w-full">

@@ -48,7 +48,7 @@
 
 {{-- Barre recherche + filtres --}}
 <x-admin.filter-bar
-    action="{{ url('/pharmacies/medicines') }}"
+    action="{{ url('/admin/medicines') }}"
     :q="$filters['q']"
     :category="$filters['category']"
     :status="$filters['status']"
@@ -97,8 +97,8 @@
                 :price="$fmt((int)$m->price)"
                 :statusLabel="$st['label']"
                 :statusVariant="$st['variant']"
-                editUrl="{{ url('/pharmacies/medicines/'.$m->id.'/edit') }}"
-                deleteUrl="{{ url('/pharmacies/medicines/'.$m->id) }}"
+                editUrl="{{ url('/admin/medicines/'.$m->id.'/edit') }}"
+                deleteUrl="{{ url('/admin/medicines/'.$m->id) }}"
             />
         @empty
             <tr>
@@ -126,11 +126,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nom du produit</label>
-                    <x-admin.input name="name" placeholder="Ex: Paracétamol 500mg" />
+                    <x-admin.input  name="name" placeholder="Ex: Paracétamol 500mg" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Référence (SKU)</label>
-                    <x-admin.input name="Reference" placeholder="Ex: MED-001" />
+                    <x-admin.input name="reference" placeholder="Ex: MED-001" />
                 </div>
             </div>
 
@@ -139,10 +139,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-                    <x-admin.select name="category">
+                    <x-admin.select name="category_id">
                         <option value="">Sélectionner une catégorie</option>
                         @foreach($categories as $cat)
-                            <option value="{{ $cat }}">{{ $cat }}</option>
+                            <option value="{{ $cat->name }}">{{ $cat->name }}</option>
                         @endforeach
                     </x-admin.select>
                 </div>
@@ -174,7 +174,7 @@
                 <x-admin.image-upload name="image_url" />
             </div>
 
-                
+
 
  <div class="pt-4 border-t border-gray-200 flex justify-end space-x-3">
             <x-admin.button type="button" variant="outline" data-modal-close="addMedicineModal">

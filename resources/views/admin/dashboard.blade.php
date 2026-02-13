@@ -6,71 +6,29 @@
 @section('content')
 @php
     $role = auth()->user()->role ?? null;
-    $isManager = $role === 'manager';
+    dump($role);
     $isCourier = $role === 'courier';
 
-    /**
-     * KPI Manager (sans "Statut")
-     * -> Bonnes pratiques : volume, CA, stock, ruptures
-     */
-    $statsManager = [
-        ['label'=>"Commandes aujourd'hui", 'value'=>24, 'icon'=>'fa-solid fa-cart-shopping', 'valueClass'=>'text-primary', 'iconWrapClass'=>'bg-blue-100 text-primary'],
-        ['label'=>"CA du mois", 'value'=>"1 280 000 FCFA", 'icon'=>'fa-solid fa-coins', 'valueClass'=>'text-secondary', 'iconWrapClass'=>'bg-indigo-100 text-secondary'],
-        ['label'=>"Produits en stock", 'value'=>156, 'icon'=>'fa-solid fa-pills', 'valueClass'=>'text-accent', 'iconWrapClass'=>'bg-green-100 text-accent'],
-        ['label'=>"Ruptures", 'value'=>8, 'icon'=>'fa-solid fa-triangle-exclamation', 'valueClass'=>'text-danger', 'iconWrapClass'=>'bg-red-100 text-danger'],
-    ];
+    $statsManager = $statsManager ?? [];
+    $statsCourier = $statsCourier ?? [];
+    $recentOrders = $recentOrders ?? [];
 
-    /**
-     * KPI Livreur
-     * -> performance, volume, fiabilité
-     */
-    $statsCourier = [
-        ['label'=>"Assignées", 'value'=>6, 'icon'=>'fa-solid fa-inbox', 'valueClass'=>'text-primary', 'iconWrapClass'=>'bg-blue-100 text-primary'],
-        ['label'=>"En cours", 'value'=>2, 'icon'=>'fa-solid fa-truck', 'valueClass'=>'text-secondary', 'iconWrapClass'=>'bg-indigo-100 text-secondary'],
-        ['label'=>"Livrées (semaine)", 'value'=>12, 'icon'=>'fa-solid fa-circle-check', 'valueClass'=>'text-accent', 'iconWrapClass'=>'bg-green-100 text-accent'],
-        ['label'=>"Taux d’acceptation", 'value'=>"92%", 'icon'=>'fa-solid fa-thumbs-up', 'valueClass'=>'text-gray-800', 'iconWrapClass'=>'bg-gray-100 text-gray-700'],
-    ];
+    $labels7Days = $labels7Days ?? ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
-    /**
-     * Table demo
-     */
-    $recentOrders = [
-        ['id'=>'#EP-1001','customer'=>'Jean Dupont','date'=>'10/05/2023','amount'=>'25 000 FCFA','status'=>'Livré','badge'=>'green'],
-        ['id'=>'#EP-1002','customer'=>'Marie Koné','date'=>'10/05/2023','amount'=>'18 500 FCFA','status'=>'En cours','badge'=>'yellow'],
-        ['id'=>'#EP-1003','customer'=>'Paul Yao','date'=>'09/05/2023','amount'=>'32 000 FCFA','status'=>'Préparation','badge'=>'blue'],
-    ];
+    $orders7Days = $orders7Days ?? [0,0,0,0,0,0,0];
+    $revenue7Days = $revenue7Days ?? [0,0,0,0,0,0,0];
 
-    /**
-     * Données charts (statiques pour l’instant)
-     */
-    $labels7Days = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    $statusBreakdownManager = $statusBreakdownManager ?? ['labels'=>[],'values'=>[]];
+    $topMedicines = $topMedicines ?? ['labels'=>[],'values'=>[]];
 
-    // Manager
-    $orders7Days = [12, 18, 9, 22, 15, 28, 24];
-    $revenue7Days = [120000, 190000, 90000, 250000, 160000, 320000, 280000];
+    $deliveries7Days = $deliveries7Days ?? [0,0,0,0,0,0,0];
+    $statusBreakdownCourier = $statusBreakdownCourier ?? ['labels'=>[],'values'=>[]];
 
-    $statusBreakdownManager = [
-        'labels' => ['En attente', 'Affectée', 'En livraison', 'Livrée', 'Annulée'],
-        'values' => [8, 6, 5, 18, 2],
-    ];
-
-    $topMedicines = [
-        'labels' => ['Doliprane', 'Amoxicilline', 'Vit C', 'Ibuprofène', 'Sirop Toux'],
-        'values' => [44, 28, 20, 16, 12],
-    ];
-
-    // Courier
-    $deliveries7Days = [1, 2, 0, 3, 2, 3, 1];
-    $statusBreakdownCourier = [
-        'labels' => ['Assignée', 'Acceptée', 'En livraison', 'Livrée', 'Refusée'],
-        'values' => [4, 3, 2, 12, 1],
-    ];
-
-    // Cards insight (progress)
-    $deliveryGoal = 20;
-    $deliveredThisWeek = 12;
-    $progressPct = min(100, (int) round(($deliveredThisWeek / max(1,$deliveryGoal)) * 100));
+    $deliveryGoal = $deliveryGoal ?? 20;
+    $deliveredThisWeek = $deliveredThisWeek ?? 0;
+    $progressPct = $progressPct ?? 0;
 @endphp
+
 
 {{-- KPI --}}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -223,9 +181,12 @@
                         <x-admin.badge :text="$o['status']" :variant="$o['badge']" />
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <a href="#" class="text-primary hover:text-secondary" title="Voir">
-                            <i class="fa-regular fa-eye"></i>
+                        <a href="{{ url('admin/my-orders/'.$o) }}"
+                            class="text-primary hover:text-secondary"
+                            title="Voir">
+                                <i class="fa-regular fa-eye"></i>
                         </a>
+
                     </td>
                 </tr>
             @endforeach

@@ -22,6 +22,10 @@ return new class extends Migration
             $table->text('notes')->nullable();
 
             $table->unsignedBigInteger('total_amount')->default(0);
+            $table->unsignedBigInteger('subtotal')->default(0);
+                        $table->unsignedBigInteger('delivery_fee')->default(0);
+
+
 
             $table->timestamp('canceled_at')->nullable();
             $table->timestamp('delivered_at')->nullable();

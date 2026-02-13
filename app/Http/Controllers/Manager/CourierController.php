@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Http\Controllers\Manager;
+
+use App\Http\Controllers\Controller;
+use App\Models\DeliveryAssignment;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+
+class CourierController extends Controller
+{
+    public function index(Request $request)
+    {
+        $q = trim((string) $request->get('q'));
+        $status = $request->get('status');
+
+        $query = User::query()
+            ->where('role', 'courier');
+
+        if ($q !== '') {
+            $query->where(function ($qq) use ($q) {
+                $qq->where('name', 'like', "%{$q}%")
+                   ->orWhere('email', 'like', "%{$q}%")
+                   ->orWhere('phone', 'like', "%{$q}%");
+            });
+        }
+
+        if ($status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($status === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        $couriers = $query->latest()->paginate(10)->withQueryString();
+
+        // Stats livraisons (évite N+1)
+        $ids = $couriers->getCollection()->pluck('id')->all();
+        $statsByCourier = collect();
+
+        if (!empty($ids)) {
+            $statsByCourier = DeliveryAssignment::query()
+                ->select(
+                    'courier_id',
+                    DB::raw("SUM(CASE WHEN status='assigned' THEN 1 ELSE 0 END) as assigned"),
+                    DB::raw("SUM(CASE WHEN status IN ('accepted','delivering') THEN 1 ELSE 0 END) as in_progress"),
+                    DB::raw("SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered"),
+                    DB::raw("SUM(CASE WHEN status='refused' THEN 1 ELSE 0 END) as refused")
+                )
+                ->whereIn('courier_id', $ids)
+                ->groupBy('courier_id')
+                ->get()
+                ->keyBy('courier_id');
+        }
+
+        $filters = ['q' => $q, 'status' => $status];
+
+        return view('admin.couriers.index', compact('couriers', 'statsByCourier', 'filters'));
+    }
+
+    public function create()
+    {
+        return view('admin.couriers.create');
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required','string','max:255'],
+            'email' => ['required','email','max:255','unique:users,email'],
+            'phone' => ['nullable','string','max:30'],
+            'password' => ['required','string','min:8','confirmed'],
+            'is_active' => ['nullable'],
+        ]);
+
+        $courier = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'password' => Hash::make($data['password']),
+            'role' => 'courier',
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->route('manager.couriers.show', $courier)
+            ->with('success', 'Livreur créé avec succès.');
+    }
+
+    public function show(User $courier)
+    {
+
+        $total = DeliveryAssignment::where('courier_id', $courier->id)
+            ->whereIn('status', ['assigned','accepted','refused','delivering','delivered'])
+            ->count();
+
+        $assigned   = DeliveryAssignment::where('courier_id', $courier->id)->where('status','assigned')->count();
+        $accepted   = DeliveryAssignment::where('courier_id', $courier->id)->where('status','accepted')->count();
+        $delivering = DeliveryAssignment::where('courier_id', $courier->id)->where('status','delivering')->count();
+        $delivered  = DeliveryAssignment::where('courier_id', $courier->id)->where('status','delivered')->count();
+        $refused    = DeliveryAssignment::where('courier_id', $courier->id)->where('status','refused')->count();
+
+        $acceptedLike = DeliveryAssignment::where('courier_id', $courier->id)
+            ->whereIn('status', ['accepted','delivering','delivered'])
+            ->count();
+
+        $acceptRate = $total > 0 ? (int) round(($acceptedLike / $total) * 100) : 0;
+
+        $stats = compact('total','assigned','accepted','delivering','delivered','refused','acceptRate');
+
+        $recentAssignments = DeliveryAssignment::with('order.user:id,name')
+            ->where('courier_id', $courier->id)
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return view('admin.couriers.show', compact('courier','stats','recentAssignments'));
+    }
+
+    public function edit(User $courier)
+    {
+        return view('admin.couriers.edit', compact('courier'));
+    }
+
+    public function update(Request $request, User $user)
+    {
+        abort_unless($user->role === 'courier', 404);
+
+        $data = $request->validate([
+            'name' => ['required','string','max:255'],
+            'email' => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+            'phone' => ['nullable','string','max:30'],
+            'password' => ['nullable','string','min:8','confirmed'],
+            'is_active' => ['nullable'],
+        ]);
+
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->phone = $data['phone'] ?? null;
+        $user->is_active = $request->boolean('is_active', $user->is_active);
+
+        if (!empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        $user->save();
+
+        return redirect()->route('manager.couriers.show', $user)
+            ->with('success', 'Livreur mis à jour.');
+    }
+
+    public function toggle(User $user)
+    {
+        abort_unless($user->role === 'courier', 404);
+
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        return back()->with('success', $user->is_active ? 'Livreur activé.' : 'Livreur désactivé.');
+    }
+
+    public function destroy(User $user)
+    {
+        abort_unless($user->role === 'courier', 404);
+
+        // Soft delete (recommandé) : ne casse pas l’historique
+        $user->delete();
+
+        return redirect()->route('manager.couriers.index')
+            ->with('success', 'Livreur supprimé.');
+    }
+}

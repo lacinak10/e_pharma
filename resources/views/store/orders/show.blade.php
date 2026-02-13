@@ -86,7 +86,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="font-bold text-gray-900">Total</span>
-                        <span class="font-extrabold text-blue-700">{{ number_format((int)$order->total, 0, ',', ' ') }} FCFA</span>
+                        <span class="font-extrabold text-blue-700">{{ number_format((int)$order->total_amount, 0, ',', ' ') }} FCFA</span>
                     </div>
                 </div>
             </div>
