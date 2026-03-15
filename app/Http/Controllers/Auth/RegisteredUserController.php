@@ -39,12 +39,15 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => 'client', // Default role for new users
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
-
+         if ($user && method_exists($user, 'isClient') && $user->isClient()) {
+            return redirect()->intended(route('store.home', absolute: false));
+        }
         return redirect(route('admin.dashboard', absolute: false));
     }
 }

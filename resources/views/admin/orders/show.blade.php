@@ -56,7 +56,7 @@ use App\Enums\OrderStatus;
                 </div>
             </div>
             <div>
-                <x-admin.badge :text="$label($order->status)" :variant="$badge($order->status)" />
+                <x-admin.badge :text="$label($order->status->label())" :variant="$badge($order->status->label())" />
             </div>
         </div>
 

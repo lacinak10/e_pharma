@@ -6,9 +6,7 @@
 @section('content')
 @php
     $role = auth()->user()->role ?? null;
-    dump($role);
     $isCourier = $role === 'courier';
-
     $statsManager = $statsManager ?? [];
     $statsCourier = $statsCourier ?? [];
     $recentOrders = $recentOrders ?? [];
@@ -181,7 +179,7 @@
                         <x-admin.badge :text="$o['status']" :variant="$o['badge']" />
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <a href="{{ url('admin/my-orders/'.$o) }}"
+                        <a href="{{ url('admin/my-orders/'.$o['id']) }}"
                             class="text-primary hover:text-secondary"
                             title="Voir">
                                 <i class="fa-regular fa-eye"></i>

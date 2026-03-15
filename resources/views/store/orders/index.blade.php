@@ -33,7 +33,7 @@
                                 {{ number_format((int)$order->total_amount, 0, ',', ' ') }} FCFA
                             </td>
                             <td class="px-6 py-4">
-                                <x-store.order-status :status="$order->status" />
+                                <x-store.order-status :status="$order->status->label()" />
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <a href="{{ route('store.orders.show', $order) }}" class="text-blue-700 font-semibold hover:underline">

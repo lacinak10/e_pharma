@@ -164,6 +164,8 @@ class DashboardController extends Controller
         $deliveryGoal = 20;
         $progressPct = min(100, (int) round(($deliveredThisWeek / max(1,$deliveryGoal)) * 100));
 
+        
+
         return view('admin.dashboard', compact(
             'labels7Days','statsCourier','deliveries7Days','statusBreakdownCourier',
             'recentOrders','deliveryGoal','deliveredThisWeek','progressPct'

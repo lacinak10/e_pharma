@@ -51,7 +51,7 @@ class MyOrderController extends Controller
         abort_unless($a && $a->courier_id === Auth::id(), 403);
 
         $a->update(['status'=>'refused','responded_at'=>now()]);
-        $order->update(['status'=>'pending_courier']);
+        $order->update(['status'=> OrderStatus::PENDING_ASSIGNMENT]);
 
         return back()->with('success','Commande refusée.');
     }

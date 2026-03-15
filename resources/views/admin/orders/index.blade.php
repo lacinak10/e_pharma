@@ -96,7 +96,7 @@ use App\Enums\OrderStatus;
                         {{ number_format((int)$o->total_amount, 0, ',', ' ') }} FCFA
                     </td>
                     <td class="px-6 py-4">
-                        <x-admin.badge :text="$label($o->status)" :variant="$badge($o->status)" />
+                        <x-admin.badge :text="$label($o->status->label())" :variant="$badge($o->status->label())" />
                     </td>
                     <td class="px-6 py-4 text-sm">
                         <a href="{{ route('manager.orders.show',$o) }}" class="text-primary hover:text-secondary" title="Voir">
