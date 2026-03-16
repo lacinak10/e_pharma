@@ -5,23 +5,27 @@
 
 @section('content')
 @php
-    $status = $status ?? request('status','delivering');
+    use App\Enums\OrderStatus;
+    $status = $status ?? request('status', OrderStatus::IN_DELIVERY->value);
 
     $statusOptions = [
-        'delivering' => 'En livraison',
-        'delivered' => 'Livrées',
-        'assigned' => 'Affectées',
-        'PENDING_ASSIGNMENT' => 'En attente livreur',
-        'cancelled' => 'Annulées',
+        OrderStatus::IN_DELIVERY->value        => 'En livraison',
+        OrderStatus::DELIVERED->value          => 'Livrées',
+        OrderStatus::ASSIGNED->value           => 'Affectées',
+        OrderStatus::ACCEPTED->value           => 'Acceptées',
+        OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
+        OrderStatus::CANCELED->value           => 'Annulées',
     ];
 
-    $badge = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'yellow',
-        'assigned' => 'blue',
-        'delivering' => 'indigo',
-        'delivered' => 'green',
-        'cancelled' => 'red',
-        default => 'gray',
+    $orderBadge = fn(OrderStatus $s) => match($s){
+        OrderStatus::PENDING_ASSIGNMENT => 'yellow',
+        OrderStatus::ASSIGNED           => 'blue',
+        OrderStatus::ACCEPTED           => 'orange',
+        OrderStatus::IN_DELIVERY        => 'indigo',
+        OrderStatus::DELIVERED          => 'green',
+        OrderStatus::CANCELED           => 'red',
+        OrderStatus::REFUSED            => 'red',
+        default                         => 'gray',
     };
 @endphp
 
@@ -58,7 +62,7 @@
                     <td class="px-6 py-4 text-sm text-gray-700">{{ $o->user?->name ?? 'Client' }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">{{ $o->assignment?->courier?->name ?? '—' }}</td>
                     <td class="px-6 py-4">
-                        <x-admin.badge :text="$o->status" :variant="$badge($o->status)" />
+                        <x-admin.badge :text="$o->status->label()" :variant="$orderBadge($o->status)" />
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">
                         {{ $o->delivered_at ? $o->delivered_at->format('d/m/Y H:i') : '—' }}

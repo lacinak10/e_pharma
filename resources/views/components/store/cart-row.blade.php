@@ -3,7 +3,7 @@
 <div class="flex gap-4 py-4">
     <div class="w-20 h-20 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100">
         @if($item['image_url'])
-            <img src="{{ $item['image_url'] }}" class="h-16 object-contain" alt="{{ $item['name'] }}">
+            <img src="{{ asset('storage/' . $item['image_url']) }}" class="h-16 object-contain" alt="{{ $item['name'] }}">
         @else
             <i class="fa-solid fa-pills text-3xl text-gray-300"></i>
         @endif

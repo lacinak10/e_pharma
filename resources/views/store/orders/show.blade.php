@@ -14,7 +14,7 @@
         <div class="flex items-center gap-3">
             <x-store.order-status :status="$order->status->label()" />
 
-            @if(in_array($order->status, ['PENDING_ASSIGNMENT','ASSIGNED'], true))
+            @if(in_array($order->status, [\App\Enums\OrderStatus::PENDING_ASSIGNMENT, \App\Enums\OrderStatus::ASSIGNED, \App\Enums\OrderStatus::REFUSED], true))
                 <form method="POST" action="{{ route('store.orders.cancel', $order) }}">
                     @csrf
                     <x-store.button variant="danger" type="submit">
@@ -36,7 +36,7 @@
                     @foreach($order->items as $it)
                         <div class="py-4 flex items-center justify-between">
                             <div>
-                                <div class="font-bold text-gray-900">{{ $it->name }}</div>
+                                <div class="font-bold text-gray-900">{{ $it->medicine_name ?? optional($it->medicine)->name }}</div>
                                 <div class="text-sm text-gray-600 mt-1">
                                     {{ number_format((int)$it->unit_price, 0, ',', ' ') }} FCFA × {{ (int)$it->quantity }}
                                 </div>
@@ -54,7 +54,7 @@
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-lg font-extrabold">Livraison</h3>
                 <div class="mt-3 text-sm text-gray-700 space-y-2">
-                    <div><span class="text-gray-500">Téléphone:</span> <b>{{ $order->phone }}</b></div>
+                    <div><span class="text-gray-500">Téléphone:</span> <b>{{ $order->delivery_phone }}</b></div>
                     <div><span class="text-gray-500">Adresse:</span> <b>{{ $order->delivery_address }}</b></div>
                     @if($order->notes)
                         <div><span class="text-gray-500">Note:</span> <b>{{ $order->notes }}</b></div>

@@ -16,6 +16,7 @@ class Order extends Model
         'delivery_address',
         'delivery_phone',
         'notes',
+        'payment_method',
         'total_amount',
         'delivery_fee',
         'subtotal',

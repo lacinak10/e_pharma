@@ -5,40 +5,31 @@
 
 @section('content')
 @php
+    use App\Enums\OrderStatus;
+    use App\Enums\AssignmentStatus;
+
     $status = $status ?? request('status');
 
-    use App\Enums\OrderStatus;
-
-    $badge = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'yellow',
-        'ASSIGNED' => 'blue',
-        'IN_DELIVERY' => 'indigo',
-        'ACCEPTED' => 'orange',
-        'DELIVERED' => 'green',
-        'REFUSED' => 'red',
-        'CANCELED' => 'red',
-        default => 'gray',
-    };
-
-
-    $label = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'En attente livreur',
-        'ASSIGNED' => 'Affectée',
-        'IN_DELIVERY' => 'En livraison',
-        'ACCEPTED' => 'Acceptée',
-        'DELIVERED' => 'Livrée',
-        'REFUSED' => 'Refusée',
-        'CANCELED' => 'Annulée',
-        default => $s,
+    $orderBadge = fn(OrderStatus $s) => match($s){
+        OrderStatus::PENDING_ASSIGNMENT => 'yellow',
+        OrderStatus::ASSIGNED           => 'blue',
+        OrderStatus::ACCEPTED           => 'orange',
+        OrderStatus::IN_DELIVERY        => 'indigo',
+        OrderStatus::DELIVERED          => 'green',
+        OrderStatus::REFUSED            => 'red',
+        OrderStatus::CANCELED           => 'red',
+        default                         => 'gray',
     };
 
     $statusOptions = [
-    OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
-    OrderStatus::ASSIGNED->value => 'Affectée',
-    OrderStatus::IN_DELIVERY->value => 'En livraison',
-    OrderStatus::DELIVERED->value => 'Livrée',
-    OrderStatus::CANCELED->value => 'Annulée',
-];
+        ''                                     => 'Tous les statuts',
+        OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
+        OrderStatus::ASSIGNED->value           => 'Affectée',
+        OrderStatus::ACCEPTED->value           => 'Acceptée',
+        OrderStatus::IN_DELIVERY->value        => 'En livraison',
+        OrderStatus::DELIVERED->value          => 'Livrée',
+        OrderStatus::CANCELED->value           => 'Annulée',
+    ];
 @endphp
 
 @if(session('success'))
@@ -82,14 +73,14 @@
                     <td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Str::limit($o->delivery_address, 35) }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">{{ number_format((int)$o->total_amount,0,',',' ') }} FCFA</td>
                     <td class="px-6 py-4">
-                <x-admin.badge :text="$label($o->status->label())" :variant="$badge($o->status->label())" />
+                        <x-admin.badge :text="$o->status->label()" :variant="$orderBadge($o->status)" />
                     </td>
                     <td class="px-6 py-4 text-sm flex gap-3 items-center">
                         <a href="{{ route('courier.my_orders.show',$o) }}" class="text-primary hover:text-secondary" title="Voir">
                             <i class="fa-regular fa-eye"></i>
                         </a>
 
-                        @if($o->assignment?->status === 'assigned')
+                        @if($o->assignment?->status === AssignmentStatus::ASSIGNED)
                             <form method="POST" action="{{ route('courier.my_orders.accept',$o) }}">
                                 @csrf @method('PATCH')
                                 <button class="text-green-700 hover:opacity-80" title="Accepter">

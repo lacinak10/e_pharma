@@ -5,24 +5,16 @@
 
 @section('content')
 @php
+    use App\Enums\AssignmentStatus;
     $status = $status ?? request('status');
     $statusOptions = [
-        '' => 'Tous',
-        'assigned' => 'Assignée',
-        'accepted' => 'Acceptée',
-        'delivering' => 'En livraison',
-        'delivered' => 'Livrée',
-        'refused' => 'Refusée',
+        ''                              => 'Tous',
+        AssignmentStatus::ASSIGNED->value   => 'Assignée',
+        AssignmentStatus::ACCEPTED->value   => 'Acceptée',
+        AssignmentStatus::DELIVERING->value => 'En livraison',
+        AssignmentStatus::DELIVERED->value  => 'Livrée',
+        AssignmentStatus::REFUSED->value    => 'Refusée',
     ];
-
-    $badge = fn($s) => match($s){
-        'assigned' => 'blue',
-        'accepted' => 'yellow',
-        'delivering' => 'indigo',
-        'delivered' => 'green',
-        'refused' => 'red',
-        default => 'gray',
-    };
 @endphp
 
 @if(session('success'))
@@ -74,7 +66,7 @@
                     <td class="px-6 py-4 text-sm text-gray-700">{{ $a->courier?->name ?? '—' }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ optional($a->assigned_at)->format('d/m/Y H:i') }}</td>
                     <td class="px-6 py-4">
-                        <x-admin.badge :text="$a->status" :variant="$badge($a->status)" />
+                        <x-admin.badge :text="$a->status->label()" :variant="$a->status->badge()" />
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $a->note ?? '—' }}</td>
                     <td class="px-6 py-4 text-sm">

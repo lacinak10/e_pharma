@@ -11,7 +11,7 @@
                 <div class="aspect-[4/3] md:aspect-[5/4] lg:aspect-square bg-gray-50 flex items-center justify-center p-8">
                     @if($medicine->image_url)
                         <img
-                            src="{{ $medicine->image_url }}"
+                            src="{{ $medicine->image_src }}"
                             alt="{{ $medicine->name }}"
                             class="max-h-full w-auto object-contain transition-transform duration-700 hover:scale-105"
                             loading="eager"
@@ -92,7 +92,7 @@
                     <div class="flex flex-col sm:flex-row gap-4 items-end">
                         <x-store.input
                             label="Quantité"
-                            name="quantity"
+                            name="qty"
                             type="number"
                             min="1"
                             max="{{ min(99, max(1, $medicine->stock)) }}"

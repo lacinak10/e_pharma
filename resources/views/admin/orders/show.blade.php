@@ -6,35 +6,28 @@
 @section('content')
 @php
 use App\Enums\OrderStatus;
+use App\Enums\AssignmentStatus;
 
-    $badge = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'yellow',
-        'ASSIGNED' => 'blue',
-        'IN_DELIVERY' => 'indigo',
-        'ACCEPTED' => 'orange',
-        'DELIVERED' => 'green',
-        'REFUSED' => 'red',
-        'CANCELED' => 'red',
-        default => 'gray',
-    };
-    $label = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'En attente livreur',
-        'ASSIGNED' => 'Affectée',
-        'IN_DELIVERY' => 'En livraison',
-        'ACCEPTED' => 'Acceptée',
-        'DELIVERED' => 'Livrée',
-        'REFUSED' => 'Refusée',
-        'CANCELED' => 'Annulée',
-        default => $s,
+    $orderBadge = fn(OrderStatus $s) => match($s){
+        OrderStatus::PENDING_ASSIGNMENT => 'yellow',
+        OrderStatus::ASSIGNED           => 'blue',
+        OrderStatus::ACCEPTED           => 'orange',
+        OrderStatus::IN_DELIVERY        => 'indigo',
+        OrderStatus::DELIVERED          => 'green',
+        OrderStatus::REFUSED            => 'red',
+        OrderStatus::CANCELED           => 'red',
+        default                         => 'gray',
     };
 
     $statusOptions = [
-    OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
-    OrderStatus::ASSIGNED->value => 'Affectée',
-    OrderStatus::IN_DELIVERY->value => 'En livraison',
-    OrderStatus::DELIVERED->value => 'Livrée',
-    OrderStatus::CANCELED->value => 'Annulée',
-];
+        OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
+        OrderStatus::ASSIGNED->value           => 'Affectée',
+        OrderStatus::ACCEPTED->value           => 'Acceptée',
+        OrderStatus::IN_DELIVERY->value        => 'En livraison',
+        OrderStatus::DELIVERED->value          => 'Livrée',
+        OrderStatus::REFUSED->value            => 'Refusée',
+        OrderStatus::CANCELED->value           => 'Annulée',
+    ];
 @endphp
 
 @if(session('success'))
@@ -56,7 +49,7 @@ use App\Enums\OrderStatus;
                 </div>
             </div>
             <div>
-                <x-admin.badge :text="$label($order->status->label())" :variant="$badge($order->status->label())" />
+                <x-admin.badge :text="$order->status->label()" :variant="$orderBadge($order->status)" />
             </div>
         </div>
 
@@ -130,7 +123,7 @@ use App\Enums\OrderStatus;
                 <div class="p-3 rounded-lg bg-gray-50 border border-gray-100 mb-3">
                     <div class="text-xs text-gray-500">Livreur actuel</div>
                     <div class="text-sm font-semibold text-gray-900">{{ $order->assignment->courier->name }}</div>
-                    <div class="text-xs text-gray-500 mt-1">Statut assignment: {{ $order->assignment->status }}</div>
+                    <div class="text-xs text-gray-500 mt-1">Statut assignment: {{ $order->assignment->status->label() }}</div>
                 </div>
             @endif
 
@@ -174,7 +167,7 @@ use App\Enums\OrderStatus;
                     <label class="block text-sm font-medium text-gray-700 mb-1">Changer statut</label>
                     <x-admin.select name="status">
                         @foreach($statusOptions as $val => $txt)
-                            <option value="{{ $val }}" {{ $order->status === $val ? 'selected' : '' }}>
+                            <option value="{{ $val }}" {{ $order->status->value === $val ? 'selected' : '' }}>
                                 {{ $txt }}
                             </option>
                         @endforeach

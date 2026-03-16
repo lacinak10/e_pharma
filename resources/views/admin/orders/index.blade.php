@@ -10,35 +10,27 @@ use App\Enums\OrderStatus;
     $q = $q ?? request('q');
     $status = $status ?? request('status');
 
-    $badge = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'yellow',
-        'ASSIGNED' => 'blue',
-        'IN_DELIVERY' => 'indigo',
-        'ACCEPTED' => 'orange',
-        'DELIVERED' => 'green',
-        'REFUSED' => 'red',
-        'CANCELED' => 'red',
-        default => 'gray',
-    };
-    $label = fn($s) => match($s){
-        'PENDING_ASSIGNMENT' => 'En attente livreur',
-        'ASSIGNED' => 'Affectée',
-        'IN_DELIVERY' => 'En livraison',
-        'ACCEPTED' => 'Acceptée',
-        'DELIVERED' => 'Livrée',
-        'REFUSED' => 'Refusée',
-        'CANCELED' => 'Annulée',
-        default => $s,
+    $orderBadge = fn(OrderStatus $s) => match($s){
+        OrderStatus::PENDING_ASSIGNMENT => 'yellow',
+        OrderStatus::ASSIGNED           => 'blue',
+        OrderStatus::ACCEPTED           => 'orange',
+        OrderStatus::IN_DELIVERY        => 'indigo',
+        OrderStatus::DELIVERED          => 'green',
+        OrderStatus::REFUSED            => 'red',
+        OrderStatus::CANCELED           => 'red',
+        default                         => 'gray',
     };
 
     $statusOptions = [
-    OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
-    OrderStatus::ASSIGNED->value => 'Affectée',
-    OrderStatus::IN_DELIVERY->value => 'En livraison',
-    OrderStatus::ACCEPTED->value => 'Acceptée',
-    OrderStatus::DELIVERED->value => 'Livrée',
-    OrderStatus::CANCELED->value => 'Annulée',
-];
+        ''                                     => 'Tous les statuts',
+        OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
+        OrderStatus::ASSIGNED->value           => 'Affectée',
+        OrderStatus::ACCEPTED->value           => 'Acceptée',
+        OrderStatus::IN_DELIVERY->value        => 'En livraison',
+        OrderStatus::DELIVERED->value          => 'Livrée',
+        OrderStatus::REFUSED->value            => 'Refusée',
+        OrderStatus::CANCELED->value           => 'Annulée',
+    ];
 @endphp
 
 @if(session('success'))
@@ -96,7 +88,7 @@ use App\Enums\OrderStatus;
                         {{ number_format((int)$o->total_amount, 0, ',', ' ') }} FCFA
                     </td>
                     <td class="px-6 py-4">
-                        <x-admin.badge :text="$label($o->status->label())" :variant="$badge($o->status->label())" />
+                        <x-admin.badge :text="$o->status->label()" :variant="$orderBadge($o->status)" />
                     </td>
                     <td class="px-6 py-4 text-sm">
                         <a href="{{ route('manager.orders.show',$o) }}" class="text-primary hover:text-secondary" title="Voir">

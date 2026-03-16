@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers\Store;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\OrderService;
 
 class OrderController extends Controller
 {
+    public function __construct(private OrderService $orderService)
+    {
+    }
+
     public function index()
     {
         $orders = Order::query()
@@ -19,22 +25,29 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
+        abort_unless($order->user_id === auth()->id(), 403);
 
-        $order->load(['items.medicine']);
+        $order->load(['items.medicine', 'assignment.courier']);
 
         return view('store.orders.show', compact('order'));
     }
 
     public function cancel(Order $order)
     {
+        abort_unless($order->user_id === auth()->id(), 403);
 
-        // Annulable seulement si pas encore en livraison
-        if (!in_array($order->status, ['PENDING_ASSIGNMENT', 'ASSIGNED'], true)) {
-            return back()->with('error', "Cette commande ne peut plus être annulée.");
+        $cancelable = [
+            OrderStatus::PENDING_ASSIGNMENT,
+            OrderStatus::ASSIGNED,
+            OrderStatus::REFUSED,
+        ];
+
+        if (!in_array($order->status, $cancelable, true)) {
+            return back()->with('error', 'Cette commande ne peut plus être annulée.');
         }
 
-        $order->update(['status' => 'CANCELED']);
+        $this->orderService->cancel($order);
 
-        return back()->with('success', "Commande annulée.");
+        return back()->with('success', 'Commande annulée.');
     }
 }

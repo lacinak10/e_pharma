@@ -10,7 +10,7 @@ class DeliveryController extends Controller
 {
     public function index(Request $request)
     {
-        $status = trim((string)$request->get('status','delivering'));
+        $status = trim((string) $request->get('status', \App\Enums\OrderStatus::IN_DELIVERY->value));
 
         $orders = Order::query()
             ->with(['user:id,name', 'assignment.courier:id,name'])

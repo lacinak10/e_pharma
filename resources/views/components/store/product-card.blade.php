@@ -18,7 +18,7 @@
     <a href="{{ route('store.medicines.show', $medicine) }}" class="block aspect-[4/3] bg-gray-50 relative overflow-hidden">
         @if($medicine->image_url)
             <img
-                src="{{ $medicine->image_url }}"
+                src="{{ $medicine->image_src }}"
                 alt="{{ $medicine->name }}"
                 class="w-full h-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
@@ -63,7 +63,7 @@
         <!-- Bouton Ajouter au panier -->
         <form method="POST" action="{{ route('store.cart.add', $medicine) }}" class="mt-5">
             @csrf
-            <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="qty" value="1">
 
             <x-store.button
                 type="submit"

@@ -31,5 +31,20 @@ class Medicine extends Model
     {
         return $this->belongsTo(Category::class);
     }
-    
+
+    /**
+     * Retourne l'URL publique de l'image (avec préfixe /storage si besoin).
+     */
+    public function getImageSrcAttribute(): ?string
+    {
+        if (empty($this->image_url)) {
+            return null;
+        }
+
+        if (str_starts_with($this->image_url, 'http')) {
+            return $this->image_url;
+        }
+
+        return asset('storage/' . $this->image_url);
+    }
 }

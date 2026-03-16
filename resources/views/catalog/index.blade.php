@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 @if($m->image_url)
-                    <img class="w-14 h-14 object-cover rounded border" src="{{ $m->image_url }}" alt="{{ $m->name }}">
+                    <img class="w-14 h-14 object-cover rounded border" src="{{ $m->image_src }}" alt="{{ $m->name }}">
                 @endif
             </div>
 
@@ -51,12 +51,11 @@
 
             @auth
                 @if(auth()->user()->isClient())
-                    <form class="mt-4 flex items-center gap-2" method="POST" action="{{ route('cart.store') }}">
+                    <form class="mt-4 flex items-center gap-2" method="POST" action="{{ route('store.cart.add', $m) }}">
                         @csrf
-                        <input type="hidden" name="medicine_id" value="{{ $m->id }}">
                         <input
                             type="number"
-                            name="quantity"
+                            name="qty"
                             min="1"
                             value="1"
                             class="border rounded px-2 py-2 w-20"
@@ -69,7 +68,7 @@
                         >
                             Ajouter
                         </button>
-                        <a class="text-sm hover:underline ml-auto" href="{{ route('cart.index') }}">Voir panier</a>
+                        <a class="text-sm hover:underline ml-auto" href="{{ route('store.cart.index') }}">Voir panier</a>
                     </form>
                 @else
                     <div class="mt-4 text-xs text-gray-500">

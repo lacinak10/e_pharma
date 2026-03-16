@@ -10,12 +10,13 @@ class DeliveryAssignment extends Model
 {
     use HasFactory;
 
-   protected $fillable = [
-        'order_id','courier_id','assigned_by','status','assigned_at','responded_at','note'
+    protected $fillable = [
+        'order_id', 'courier_id', 'assigned_by', 'status', 'assigned_at', 'responded_at', 'note',
     ];
 
     protected $casts = [
-        'assigned_at' => 'datetime',
+        'status'       => AssignmentStatus::class,
+        'assigned_at'  => 'datetime',
         'responded_at' => 'datetime',
     ];
 

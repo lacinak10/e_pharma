@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Manager;
 
+use App\Enums\AssignmentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryAssignment;
 use App\Models\User;
@@ -41,13 +42,19 @@ class CourierController extends Controller
         $statsByCourier = collect();
 
         if (!empty($ids)) {
+            $a  = AssignmentStatus::ASSIGNED->value;
+            $ac = AssignmentStatus::ACCEPTED->value;
+            $de = AssignmentStatus::DELIVERING->value;
+            $dv = AssignmentStatus::DELIVERED->value;
+            $rf = AssignmentStatus::REFUSED->value;
+
             $statsByCourier = DeliveryAssignment::query()
                 ->select(
                     'courier_id',
-                    DB::raw("SUM(CASE WHEN status='assigned' THEN 1 ELSE 0 END) as assigned"),
-                    DB::raw("SUM(CASE WHEN status IN ('accepted','delivering') THEN 1 ELSE 0 END) as in_progress"),
-                    DB::raw("SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered"),
-                    DB::raw("SUM(CASE WHEN status='refused' THEN 1 ELSE 0 END) as refused")
+                    DB::raw("SUM(CASE WHEN status='{$a}' THEN 1 ELSE 0 END) as assigned"),
+                    DB::raw("SUM(CASE WHEN status IN ('{$ac}','{$de}') THEN 1 ELSE 0 END) as in_progress"),
+                    DB::raw("SUM(CASE WHEN status='{$dv}' THEN 1 ELSE 0 END) as delivered"),
+                    DB::raw("SUM(CASE WHEN status='{$rf}' THEN 1 ELSE 0 END) as refused")
                 )
                 ->whereIn('courier_id', $ids)
                 ->groupBy('courier_id')
@@ -92,17 +99,23 @@ class CourierController extends Controller
     {
 
         $total = DeliveryAssignment::where('courier_id', $courier->id)
-            ->whereIn('status', ['assigned','accepted','refused','delivering','delivered'])
+            ->whereIn('status', [
+                AssignmentStatus::ASSIGNED,
+                AssignmentStatus::ACCEPTED,
+                AssignmentStatus::REFUSED,
+                AssignmentStatus::DELIVERING,
+                AssignmentStatus::DELIVERED,
+            ])
             ->count();
 
-        $assigned   = DeliveryAssignment::where('courier_id', $courier->id)->where('status','assigned')->count();
-        $accepted   = DeliveryAssignment::where('courier_id', $courier->id)->where('status','accepted')->count();
-        $delivering = DeliveryAssignment::where('courier_id', $courier->id)->where('status','delivering')->count();
-        $delivered  = DeliveryAssignment::where('courier_id', $courier->id)->where('status','delivered')->count();
-        $refused    = DeliveryAssignment::where('courier_id', $courier->id)->where('status','refused')->count();
+        $assigned   = DeliveryAssignment::where('courier_id', $courier->id)->where('status', AssignmentStatus::ASSIGNED)->count();
+        $accepted   = DeliveryAssignment::where('courier_id', $courier->id)->where('status', AssignmentStatus::ACCEPTED)->count();
+        $delivering = DeliveryAssignment::where('courier_id', $courier->id)->where('status', AssignmentStatus::DELIVERING)->count();
+        $delivered  = DeliveryAssignment::where('courier_id', $courier->id)->where('status', AssignmentStatus::DELIVERED)->count();
+        $refused    = DeliveryAssignment::where('courier_id', $courier->id)->where('status', AssignmentStatus::REFUSED)->count();
 
         $acceptedLike = DeliveryAssignment::where('courier_id', $courier->id)
-            ->whereIn('status', ['accepted','delivering','delivered'])
+            ->whereIn('status', [AssignmentStatus::ACCEPTED, AssignmentStatus::DELIVERING, AssignmentStatus::DELIVERED])
             ->count();
 
         $acceptRate = $total > 0 ? (int) round(($acceptedLike / $total) * 100) : 0;
