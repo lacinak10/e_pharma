@@ -18,6 +18,7 @@ use App\Http\Controllers\Store\OrderController;
 use App\Http\Controllers\Store\PrescriptionController;
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Manager\StockController;
@@ -70,6 +71,11 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     // Dashboard (manager + courier)
     Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+    // Notifications (commun)
+    Route::get('notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('admin.notifications.markAllAsRead');
+    Route::post('notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('admin.notifications.markAsRead');
 
     // Compte (commun)
     Route::get('profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');

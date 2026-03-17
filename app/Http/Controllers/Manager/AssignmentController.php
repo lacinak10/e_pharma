@@ -7,6 +7,8 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryAssignment;
 use App\Models\Order;
+use App\Models\User;
+use App\Notifications\NewAssignmentNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,6 +50,10 @@ class AssignmentController extends Controller
         );
 
         $order->update(['status' => OrderStatus::ASSIGNED]);
+
+        // Notifier le livreur
+        $courier = User::find($validated['courier_id']);
+        $courier?->notify(new NewAssignmentNotification($order));
 
         return back()->with('success', 'Livreur affecté.');
     }

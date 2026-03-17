@@ -6,7 +6,10 @@ use App\Enums\OrderStatus;
 use App\Models\Medicine;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class OrderService
 {
@@ -78,6 +81,10 @@ class OrderService
                 $medicine->decrement('stock', (int) $line['qty']);
                 $this->stockService->updateStatus($medicine->fresh());
             }
+
+            // Notifier tous les managers
+            $managers = User::where('role', User::ROLE_MANAGER)->get();
+            Notification::send($managers, new NewOrderNotification($order->load('user')));
 
             return $order;
         });

@@ -6,6 +6,8 @@
     $roleLabel = $isManager ? 'Espace Manager' : ($isCourier ? 'Espace Livreur' : 'Espace Admin');
     $roleIcon  = $isManager ? 'fa-solid fa-user-shield' : ($isCourier ? 'fa-solid fa-motorcycle' : 'fa-solid fa-user');
 
+    $unreadCount = auth()->user()->unreadNotifications->count();
+
     // Menu commun (manager + livreur)
     $menu = [
         [
@@ -16,6 +18,13 @@
                     'icon'   => 'fa-solid fa-gauge-high',
                     'label'  => 'Tableau de bord',
                     'active' => request()->is('admin/dashboard'),
+                ],
+                [
+                    'href'   => url('/admin/notifications'),
+                    'icon'   => 'fa-regular fa-bell',
+                    'label'  => 'Notifications',
+                    'active' => request()->is('admin/notifications*'),
+                    'badge'  => $unreadCount > 0 ? $unreadCount : null,
                 ],
             ],
         ],

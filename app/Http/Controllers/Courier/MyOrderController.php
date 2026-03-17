@@ -6,8 +6,11 @@ use App\Enums\AssignmentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
+use App\Notifications\OrderStatusChangedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class MyOrderController extends Controller
 {
@@ -48,6 +51,9 @@ class MyOrderController extends Controller
 
         $order->update(['status' => OrderStatus::ACCEPTED]);
 
+        $managers = User::where('role', User::ROLE_MANAGER)->get();
+        Notification::send($managers, new OrderStatusChangedNotification($order, 'accepted'));
+
         return back()->with('success', 'Commande acceptée.');
     }
 
@@ -64,6 +70,9 @@ class MyOrderController extends Controller
 
         $order->update(['status' => OrderStatus::PENDING_ASSIGNMENT]);
 
+        $managers = User::where('role', User::ROLE_MANAGER)->get();
+        Notification::send($managers, new OrderStatusChangedNotification($order, 'refused'));
+
         return back()->with('success', 'Commande refusée.');
     }
 
@@ -75,6 +84,9 @@ class MyOrderController extends Controller
 
         $assignment->update(['status' => AssignmentStatus::DELIVERING]);
         $order->update(['status' => OrderStatus::IN_DELIVERY]);
+
+        $managers = User::where('role', User::ROLE_MANAGER)->get();
+        Notification::send($managers, new OrderStatusChangedNotification($order, 'in_delivery'));
 
         return back()->with('success', 'Livraison démarrée.');
     }
@@ -90,6 +102,9 @@ class MyOrderController extends Controller
             'status'       => OrderStatus::DELIVERED,
             'delivered_at' => now(),
         ]);
+
+        $managers = User::where('role', User::ROLE_MANAGER)->get();
+        Notification::send($managers, new OrderStatusChangedNotification($order, 'delivered'));
 
         return back()->with('success', 'Livraison confirmée.');
     }

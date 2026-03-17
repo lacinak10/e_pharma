@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Medicine;
+use App\Models\User;
+use App\Notifications\LowStockNotification;
+use Illuminate\Support\Facades\Notification;
 
 class StockService
 {
@@ -27,8 +30,17 @@ class StockService
      */
     public function updateStatus(Medicine $medicine): void
     {
-        $medicine->status = $this->computeStatus($medicine->stock, $medicine->alert_threshold);
+        $oldStatus = $medicine->status;
+        $newStatus = $this->computeStatus($medicine->stock, $medicine->alert_threshold);
+
+        $medicine->status = $newStatus;
         $medicine->save();
+
+        // Notifier les managers si le stock devient faible ou épuisé
+        if ($oldStatus === 'En stock' && in_array($newStatus, ['Stock faible', 'Épuisé'])) {
+            $managers = User::where('role', User::ROLE_MANAGER)->get();
+            Notification::send($managers, new LowStockNotification($medicine));
+        }
     }
 
     /**

@@ -16,46 +16,17 @@
         default   => 'bg-gray-100 text-gray-700'
     };
 
-    // À remplacer par $user->unreadNotifications plus tard
-    $notificationCount = 4;
-    $notifications = [
-        [
-            'type' => 'order',
-            'title' => 'Nouvelle commande',
-            'message' => 'Commande #EP-1042 en attente d’affectation.',
-            'time' => 'Il y a 3 min',
-            'href' => url('/admin/orders'),
-            'icon' => 'fa-bag-shopping',
-            'color' => 'blue'
-        ],
-        [
-            'type' => 'delivery',
-            'title' => 'Livraison acceptée',
-            'message' => 'Le livreur a accepté la commande #EP-1037.',
-            'time' => 'Il y a 18 min',
-            'href' => url('/admin/orders'),
-            'icon' => 'fa-truck',
-            'color' => 'indigo'
-        ],
-        [
-            'type' => 'stock',
-            'title' => 'Stock faible',
-            'message' => 'Amoxicilline 500mg : seulement 3 unités restantes.',
-            'time' => 'Il y a 1 heure',
-            'href' => url('/admin/medicines'),
-            'icon' => 'fa-triangle-exclamation',
-            'color' => 'yellow'
-        ],
-        [
-            'type' => 'system',
-            'title' => 'Rapport quotidien prêt',
-            'message' => 'Le rapport de ventes du jour est disponible.',
-            'time' => 'Hier',
-            'href' => url('/admin/reports'),
-            'icon' => 'fa-chart-line',
-            'color' => 'green'
-        ],
-    ];
+    $notificationCount = $user->unreadNotifications->count();
+    $notifications = $user->unreadNotifications->take(5)->map(fn($n) => [
+        ‘id’      => $n->id,
+        ‘type’    => $n->data[‘type’]    ?? ‘system’,
+        ‘title’   => $n->data[‘title’]   ?? ‘Notification’,
+        ‘message’ => $n->data[‘message’] ?? ‘’,
+        ‘time’    => $n->created_at->diffForHumans(),
+        ‘href’    => $n->data[‘url’]     ?? url(‘/admin/notifications’),
+        ‘icon’    => $n->data[‘icon’]    ?? ‘fa-bell’,
+        ‘color’   => $n->data[‘color’]   ?? ‘gray’,
+    ]);
 @endphp
 
 <header class="flex items-center justify-between h-16 px-4 md:px-6 bg-white border-b border-gray-200 shadow-sm">
@@ -113,9 +84,12 @@
                         </p>
                     </div>
                     @if($notificationCount > 0)
-                        <button type="button" class="text-sm font-medium text-blue-600 hover:text-blue-700">
-                            Tout marquer comme lu
-                        </button>
+                        <form method="POST" action="{{ route('admin.notifications.markAllAsRead') }}">
+                            @csrf
+                            <button type="submit" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                                Tout marquer comme lu
+                            </button>
+                        </form>
                     @endif
                 </div>
 
@@ -142,16 +116,21 @@
                                     };
                                 @endphp
                                 <li class="hover:bg-gray-50 transition">
-                                    <a href="{{ $n['href'] }}" class="flex items-start gap-4 p-4">
-                                        <div class="flex-shrink-0 w-11 h-11 rounded-xl {{ $colorClasses }} flex items-center justify-center ring-4 ring-white">
-                                            <i class="fa-solid {{ $n['icon'] }} text-base"></i>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-semibold text-gray-900 text-sm">{{ $n['title'] }}</p>
-                                            <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ $n['message'] }}</p>
-                                            <p class="text-xs text-gray-400 mt-2">{{ $n['time'] }}</p>
-                                        </div>
-                                    </a>
+                                    <form method="POST" action="{{ route('admin.notifications.markAsRead', $n['id']) }}" class="contents">
+                                        @csrf
+                                        <a href="{{ $n['href'] }}"
+                                           onclick="this.closest('form').submit(); return false;"
+                                           class="flex items-start gap-4 p-4">
+                                            <div class="flex-shrink-0 w-11 h-11 rounded-xl {{ $colorClasses }} flex items-center justify-center ring-4 ring-white">
+                                                <i class="fa-solid {{ $n['icon'] }} text-base"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-semibold text-gray-900 text-sm">{{ $n['title'] }}</p>
+                                                <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ $n['message'] }}</p>
+                                                <p class="text-xs text-gray-400 mt-2">{{ $n['time'] }}</p>
+                                            </div>
+                                        </a>
+                                    </form>
                                 </li>
                             @endforeach
                         </ul>
@@ -160,7 +139,7 @@
 
                 <!-- Footer -->
                 <div class="p-4 border-t border-gray-100 bg-gray-50 text-center">
-                    <a href="{{ url('/admin/notifications') }}"
+                    <a href="{{ route('admin.notifications.index') }}"
                        class="text-sm font-semibold text-blue-600 hover:text-blue-700">
                         Voir toutes les notifications →
                     </a>
