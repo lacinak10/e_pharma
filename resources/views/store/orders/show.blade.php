@@ -12,7 +12,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <x-store.order-status :status="$order->status->label()" />
+            <x-store.order-status :status="$order->status->value" />
 
             @if(in_array($order->status, [\App\Enums\OrderStatus::PENDING_ASSIGNMENT, \App\Enums\OrderStatus::ASSIGNED, \App\Enums\OrderStatus::REFUSED], true))
                 <form method="POST" action="{{ route('store.orders.cancel', $order) }}">
@@ -27,7 +27,7 @@
 
     <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
-            <x-store.order-timeline :status="$order->status->label()" />
+            <x-store.order-timeline :status="$order->status->value" />
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-lg font-extrabold">Articles</h3>

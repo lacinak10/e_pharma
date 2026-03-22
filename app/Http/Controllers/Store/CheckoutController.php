@@ -31,10 +31,13 @@ class CheckoutController extends Controller
             return redirect()->route('store.cart.index')->with('error', 'Votre panier est vide.');
         }
 
+        $request->merge([
+            'delivery_phone' => preg_replace('/\s+/', '', $request->delivery_phone),
+        ]);
+
         $data = $request->validate([
             'delivery_address' => ['required', 'string', 'min:5', 'max:255'],
-            'delivery_phone'   => ['required', 'string', 'min:8', 'max:30'],
-            'notes'            => ['nullable', 'string', 'max:500'],
+            'delivery_phone' => ['required', 'string', 'regex:/^(\+225)?[0-9]{10}$/'],            'notes'            => ['nullable', 'string', 'max:500'],
             'payment_method'   => ['required', 'in:cash,momo,card'],
         ]);
 

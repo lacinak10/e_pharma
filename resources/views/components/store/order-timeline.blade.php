@@ -73,15 +73,21 @@
                 $stepRank = $idx + 1;
                 $isFailureStep = (bool) ($step['isFailure'] ?? false);
 
-                if ($isFailureStep) {
-                    $done = true;
-                    $active = true;
-                    $stateLabel = 'Échec';
-                } else {
-                    $done = $failed ? ($stepRank <= $stageRank) : ($stepRank < $currentRank);
-                    $active = (!$failed && $stepRank === $currentRank);
-                    $stateLabel = $done ? 'Terminé' : ($active ? 'En cours' : 'À venir');
-                }
+               if ($isFailureStep) {
+    $done = true;
+    $active = true;
+    $stateLabel = 'Échec';
+} else {
+    if ($statusKey === 'DELIVERED') {
+        $done = $stepRank <= $currentRank;
+        $active = false;
+    } else {
+        $done = $failed ? ($stepRank <= $stageRank) : ($stepRank < $currentRank);
+        $active = (!$failed && $stepRank === $currentRank);
+    }
+
+    $stateLabel = $done ? 'Terminé' : ($active ? 'En cours' : 'À venir');
+}
 
                 $classes = match (true) {
                     $isFailureStep => 'bg-red-100 text-red-700',
@@ -102,6 +108,9 @@
                 <div class="mt-1 w-9 h-9 rounded-xl flex items-center justify-center {{ $classes }}">
                     <i class="fa-solid {{ $icon }}"></i>
                 </div>
+
+               
+
 
                 <div class="flex-1">
                     <div class="font-bold text-gray-900">{{ $step['label'] }}</div>

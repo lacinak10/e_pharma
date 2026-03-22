@@ -1,14 +1,15 @@
 @props(['title' => 'Tableau de bord'])
-
 @php
     $user = auth()->user();
     $role = $user->role ?? 'admin';
+
     $roleLabel = match($role) {
         'manager' => 'Manager',
         'courier' => 'Livreur',
         'admin'   => 'Administrateur',
-        default  => 'Utilisateur'
+        default   => 'Utilisateur'
     };
+
     $roleColor = match($role) {
         'manager' => 'bg-purple-100 text-purple-700',
         'courier' => 'bg-indigo-100 text-indigo-700',
@@ -17,15 +18,16 @@
     };
 
     $notificationCount = $user->unreadNotifications->count();
+
     $notifications = $user->unreadNotifications->take(5)->map(fn($n) => [
-        ‘id’      => $n->id,
-        ‘type’    => $n->data[‘type’]    ?? ‘system’,
-        ‘title’   => $n->data[‘title’]   ?? ‘Notification’,
-        ‘message’ => $n->data[‘message’] ?? ‘’,
-        ‘time’    => $n->created_at->diffForHumans(),
-        ‘href’    => $n->data[‘url’]     ?? url(‘/admin/notifications’),
-        ‘icon’    => $n->data[‘icon’]    ?? ‘fa-bell’,
-        ‘color’   => $n->data[‘color’]   ?? ‘gray’,
+        'id'      => $n->id,
+        'type'    => $n->data['type']    ?? 'system',
+        'title'   => $n->data['title']   ?? 'Notification',
+        'message' => $n->data['message'] ?? '',
+        'time'    => $n->created_at->diffForHumans(),
+        'href'    => $n->data['url']     ?? url('/admin/notifications'),
+        'icon'    => $n->data['icon']    ?? 'fa-bell',
+        'color'   => $n->data['color']   ?? 'gray',
     ]);
 @endphp
 

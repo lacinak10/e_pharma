@@ -17,9 +17,14 @@
                 <p class="text-sm text-gray-600 mt-1">Nous contacterons si besoin de précision.</p>
 
                 <div class="mt-6">
-                    <input type="file" name="prescription" class="block w-full text-sm text-gray-600
+                    <input type="file" name="prescription" disabled
+                        class="block w-full text-sm text-gray-400 cursor-not-allowed
                         file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0
-                        file:bg-blue-600 file:text-white file:font-semibold hover:file:bg-blue-700">
+                        file:bg-gray-300 file:text-white file:font-semibold">
+
+                    <p class="text-sm text-red-600 mt-3">
+                        ⚠️ L’envoi d’ordonnance est temporairement indisponible.
+                    </p>
                 </div>
 
                 @error('prescription')
@@ -28,9 +33,9 @@
             </div>
 
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
-                <x-store.button type="submit" variant="primary" class="w-full sm:w-auto">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Envoyer
-                </x-store.button>
+                <x-store.button type="submit" variant="primary" class="w-full sm:w-auto" disabled>
+    <i class="fa-solid fa-cloud-arrow-up"></i> Envoyer
+</x-store.button>
                 <a href="{{ route('store.medicines.index') }}" class="w-full sm:w-auto">
                     <x-store.button type="button" variant="outline" class="w-full">
                         Aller au catalogue

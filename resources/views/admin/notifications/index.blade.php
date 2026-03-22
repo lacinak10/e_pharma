@@ -3,7 +3,6 @@
 @section('title', 'Notifications')
 
 @section('content')
-<x-admin.topbar title="Notifications" />
 
 <main class="flex-1 p-4 md:p-6 space-y-6">
 

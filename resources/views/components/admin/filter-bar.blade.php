@@ -33,9 +33,9 @@
 
                 <x-admin.select name="status" class="md:w-48">
                     <option value="">Tous les statuts</option>
-                    <option value="in_stock" {{ $status === 'in_stock' ? 'selected' : '' }}>En stock</option>
-                    <option value="low_stock" {{ $status === 'low_stock' ? 'selected' : '' }}>Stock faible</option>
-                    <option value="out_of_stock" {{ $status === 'out_of_stock' ? 'selected' : '' }}>Épuisé</option>
+                    <option value="En stock" {{ $status === 'En stock' ? 'selected' : '' }}>En stock</option>
+                    <option value="Stock faible" {{ $status === 'Stock faible' ? 'selected' : '' }}>Stock faible</option>
+                    <option value="Épuisé" {{ $status === 'Épuisé' ? 'selected' : '' }}>Épuisé</option>
                 </x-admin.select>
 
                 <x-admin.button type="submit" variant="primary" icon="fas fa-filter">

@@ -37,6 +37,7 @@ class MedicineController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+
         return view('admin.medicines.index', compact('medicines', 'categories', 'q', 'category', 'status'));
     }
 

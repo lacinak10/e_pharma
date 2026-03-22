@@ -56,9 +56,8 @@
             ← Retour
         </a>
 
-        @php use App\Enums\AssignmentStatus; @endphp
         <div class="flex flex-wrap gap-2">
-            @if($a?->status === AssignmentStatus::ASSIGNED)
+            @if($a?->status === App\Enums\AssignmentStatus::ASSIGNED)
                 <form method="POST" action="{{ route('courier.my_orders.accept',$order) }}">
                     @csrf @method('PATCH')
                     <x-admin.button type="submit" variant="primary" icon="fa-solid fa-circle-check">Accepter</x-admin.button>
@@ -67,12 +66,12 @@
                     @csrf @method('PATCH')
                     <x-admin.button type="submit" variant="outline" icon="fa-solid fa-circle-xmark">Refuser</x-admin.button>
                 </form>
-            @elseif($a?->status === AssignmentStatus::ACCEPTED)
+            @elseif($a?->status === App\Enums\AssignmentStatus::ACCEPTED)
                 <form method="POST" action="{{ route('courier.my_orders.start',$order) }}">
                     @csrf @method('PATCH')
                     <x-admin.button type="submit" variant="primary" icon="fa-solid fa-truck">Démarrer livraison</x-admin.button>
                 </form>
-            @elseif($a?->status === AssignmentStatus::DELIVERING)
+            @elseif($a?->status === App\Enums\AssignmentStatus::DELIVERING)
                 <form method="POST" action="{{ route('courier.my_orders.delivered',$order) }}">
                     @csrf @method('PATCH')
                     <x-admin.button type="submit" variant="primary" icon="fa-solid fa-circle-check">Marquer livrée</x-admin.button>

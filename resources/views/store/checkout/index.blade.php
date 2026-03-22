@@ -20,7 +20,7 @@
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-lg font-extrabold">Livraison</h3>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <x-store.input name="delivery_phone" label="Téléphone" placeholder="+225 ..." value="{{ old('delivery_phone') }}" />
+                    <x-store.input name="delivery_phone" label="Téléphone" placeholder="Ex : 0505050505" value="{{ old('delivery_phone') }}" />
                     <x-store.input name="delivery_address" label="Adresse" placeholder="Ex: Cocody Angré, Rue..." value="{{ old('delivery_address') }}" />
                 </div>
                 <div class="mt-4">
@@ -36,17 +36,19 @@
                 <h3 class="text-lg font-extrabold">Paiement</h3>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                     <label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer">
-                        <input type="radio" name="payment_method" value="cash" class="mr-2" @checked(old('payment_method','cash')==='cash')>
-                        Espèces
-                    </label>
-                    <label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer">
-                        <input type="radio" name="payment_method" value="momo" class="mr-2" @checked(old('payment_method')==='momo')>
-                        Mobile Money
-                    </label>
-                    <label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer">
-                        <input type="radio" name="payment_method" value="card" class="mr-2" @checked(old('payment_method')==='card')>
-                        Carte
-                    </label>
+    <input type="radio" name="payment_method" value="cash" class="mr-2" checked>
+    Espèces
+</label>
+
+<label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer opacity-50 cursor-not-allowed">
+    <input type="radio" name="payment_method" value="momo" class="mr-2" disabled>
+    Mobile Money
+</label>
+
+<label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer opacity-50 cursor-not-allowed">
+    <input type="radio" name="payment_method" value="card" class="mr-2" disabled>
+    Carte
+</label>
                 </div>
 
                 @error('payment_method') <span class="text-sm text-red-600 mt-2 block">{{ $message }}</span> @enderror
