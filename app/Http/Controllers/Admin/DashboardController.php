@@ -17,7 +17,14 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $user      = Auth::user();
+        $user = Auth::user();
+
+        // Defense in depth: middleware already blocks this, but double-check at controller level
+        if (!$user->isManager() && !$user->isCourier()) {
+            return redirect()->route('store.home')
+                ->with('error', 'Vous n\'avez pas accès à cette section.');
+        }
+
         $isCourier = $user->role === 'courier';
 
         $days        = collect(range(6, 0))->map(fn($i) => Carbon::today()->subDays($i));

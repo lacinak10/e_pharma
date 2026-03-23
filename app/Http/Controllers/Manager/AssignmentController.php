@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\NewAssignmentNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AssignmentController extends Controller
 {
@@ -32,7 +33,7 @@ class AssignmentController extends Controller
     {
         $validated = $request->validate([
             'order_id'   => ['required', 'exists:orders,id'],
-            'courier_id' => ['required', 'exists:users,id'],
+            'courier_id' => ['required', Rule::exists('users', 'id')->where('role', 'courier')],
             'note'       => ['nullable', 'string', 'max:255'],
         ]);
 

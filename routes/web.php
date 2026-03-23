@@ -45,12 +45,11 @@ Route::name('store.')->group(function () {
     Route::delete('/panier/supprimer/{medicine}', [CartController::class, 'destroy'])->name('cart.remove');
     Route::delete('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
 
-    // Prescription (simple)
-    Route::get('/scan-ordonnance', [PrescriptionController::class, 'create'])->name('prescriptions.create');
-    Route::post('/scan-ordonnance', [PrescriptionController::class, 'store'])->name('prescriptions.store');
+    // Prescription + Checkout + Orders (auth + email vérifié)
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/scan-ordonnance', [PrescriptionController::class, 'create'])->name('prescriptions.create');
+        Route::post('/scan-ordonnance', [PrescriptionController::class, 'store'])->name('prescriptions.store');
 
-    // Checkout + Orders (auth)
-    Route::middleware(['auth'])->group(function () {
         Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
         Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
@@ -67,58 +66,57 @@ Route::resource('catalog', CatalogController::class)
 
 // Auth (Breeze)
 require __DIR__.'/auth.php';
-Route::middleware(['auth'])->prefix('admin')->group(function () {
+Route::middleware(['auth', EnsureRole::class . ':manager,courier'])->prefix('admin')->group(function () {
 
-    // Dashboard (manager + courier)
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-
-    // Notifications (commun)
+    // Notifications (manager + courier)
     Route::get('notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
     Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('admin.notifications.markAllAsRead');
     Route::post('notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('admin.notifications.markAsRead');
 
-    // Compte (commun)
+    // Profil + Paramètres (manager + courier)
     Route::get('profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
     Route::put('profile', [ProfileController::class, 'update'])->name('admin.profile.update');
-
     Route::get('settings', [SettingsController::class, 'edit'])->name('admin.settings.edit');
     Route::put('settings', [SettingsController::class, 'update'])->name('admin.settings.update');
 
-    // ====== MANAGER ======
-    Route::middleware(EnsureRole::class . ':manager')->name('manager.')->group(function () {
+    // ====== MANAGER UNIQUEMENT ======
+    Route::middleware(EnsureRole::class . ':manager')->group(function () {
 
-        // Catalogue
-        Route::resource('medicines', ManagerMedicineController::class);
-        Route::patch('medicines/{medicine}/toggle', [ManagerMedicineController::class, 'toggle'])
-    ->name('medicines.toggle');
+        // Dashboard (manager seulement — les livreurs ne voient pas cette page)
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
+        Route::name('manager.')->group(function () {
 
-        Route::resource('categories', CategoryController::class);
+            // Catalogue
+            Route::resource('medicines', ManagerMedicineController::class);
+            Route::patch('medicines/{medicine}/toggle', [ManagerMedicineController::class, 'toggle'])
+                ->name('medicines.toggle');
 
-        // Stock (pages dédiées)
-        Route::get('stock', [StockController::class, 'index'])->name('stock.index');
-        Route::get('stock/{medicine}/edit', [StockController::class, 'edit'])->name('stock.edit');
-        Route::put('stock/{medicine}', [StockController::class, 'update'])->name('stock.update');
+            Route::resource('categories', CategoryController::class);
 
-        // Commandes & livraisons
-        Route::resource('orders', ManagerOrderController::class)->only(['index','show','update']);
+            // Stock (pages dédiées)
+            Route::get('stock', [StockController::class, 'index'])->name('stock.index');
+            Route::get('stock/{medicine}/edit', [StockController::class, 'edit'])->name('stock.edit');
+            Route::put('stock/{medicine}', [StockController::class, 'update'])->name('stock.update');
 
-        Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
-        Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+            // Commandes & livraisons
+            Route::resource('orders', ManagerOrderController::class)->only(['index', 'show', 'update']);
 
-        Route::get('deliveries', [DeliveryController::class, 'index'])->name('deliveries.index');
+            Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+            Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
 
-        // Utilisateurs
-        Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
-        Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
-            Route::resource('couriers', CourierController::class); // index, create, store, show, edit, update, destroy
+            Route::get('deliveries', [DeliveryController::class, 'index'])->name('deliveries.index');
 
+            // Utilisateurs
+            Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+            Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::resource('couriers', CourierController::class);
+        });
     });
 
-    // ====== COURIER ======
+    // ====== LIVREUR UNIQUEMENT ======
     Route::middleware(EnsureRole::class . ':courier')->name('courier.')->group(function () {
 
-        // Sidebar: /admin/my-orders
         Route::get('my-orders', [MyOrderController::class, 'index'])->name('my_orders.index');
         Route::get('my-orders/{order}', [MyOrderController::class, 'show'])->name('my_orders.show');
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class CourierController extends Controller
@@ -91,12 +92,15 @@ class CourierController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
+        Log::info('Courier created', ['manager_id' => auth()->id(), 'courier_id' => $courier->id, 'email' => $courier->email]);
+
         return redirect()->route('manager.couriers.show', $courier)
             ->with('success', 'Livreur créé avec succès.');
     }
 
     public function show(User $courier)
     {
+        abort_unless($courier->role === 'courier', 404);
 
         $total = DeliveryAssignment::where('courier_id', $courier->id)
             ->whereIn('status', [
@@ -177,7 +181,9 @@ class CourierController extends Controller
     {
         abort_unless($user->role === 'courier', 404);
 
-        // Soft delete (recommandé) : ne casse pas l’historique
+        Log::info('Courier deleted', ['manager_id' => auth()->id(), 'courier_id' => $user->id, 'email' => $user->email]);
+
+        // Soft delete (recommandé) : ne casse pas l'historique
         $user->delete();
 
         return redirect()->route('manager.couriers.index')

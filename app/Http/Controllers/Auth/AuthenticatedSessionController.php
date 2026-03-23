@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -29,11 +30,24 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
-        if ($user && method_exists($user, 'isClient') && $user->isClient()) {
-            return redirect()->intended(route('store.home', absolute: false));
+
+        Log::info('User logged in', [
+            'user_id' => $user->id,
+            'email'   => $user->email,
+            'role'    => $user->role,
+            'ip'      => $request->ip(),
+        ]);
+
+        if ($user->isClient()) {
+            return redirect()->route('store.home');
         }
 
-        return redirect()->intended(route('admin.dashboard', absolute: false));
+        if ($user->isCourier()) {
+            return redirect()->route('courier.my_orders.index');
+        }
+
+        // Manager
+        return redirect()->route('admin.dashboard');
     }
 
     /**
@@ -41,6 +55,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        Log::info('User logged out', [
+            'user_id' => $user?->id,
+            'ip'      => $request->ip(),
+        ]);
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

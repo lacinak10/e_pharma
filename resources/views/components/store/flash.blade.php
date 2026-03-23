@@ -3,7 +3,7 @@
     $error = session('error');
 @endphp
 
-<div class="max-w-7xl mx-auto px-4 mt-4 space-y-3">
+<div class="max-w-7xl mx-auto px-4 mt-4 mb-4 space-y-3">
     @if($success)
         <div class="rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800 flex items-start gap-3">
             <i class="fa-regular fa-circle-check mt-0.5"></i>

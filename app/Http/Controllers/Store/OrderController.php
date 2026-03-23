@@ -25,7 +25,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        abort_unless($order->user_id === auth()->id(), 403);
+        $this->authorize('view', $order);
 
         $order->load(['items.medicine', 'assignment.courier']);
 
@@ -34,7 +34,7 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        abort_unless($order->user_id === auth()->id(), 403);
+        $this->authorize('cancel', $order);
 
         $cancelable = [
             OrderStatus::PENDING_ASSIGNMENT,

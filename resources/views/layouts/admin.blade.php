@@ -44,6 +44,18 @@
         <x-admin.topbar :title="trim($__env->yieldContent('page_title', 'Tableau de bord'))" />
 
         <main class="flex-1 overflow-y-auto p-4">
+            @if(session('success'))
+                <div class="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 flex items-start gap-3">
+                    <i class="fa-regular fa-circle-check mt-0.5"></i>
+                    <span class="text-sm font-medium">{{ session('success') }}</span>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <span class="text-sm font-medium">{{ session('error') }}</span>
+                </div>
+            @endif
             @yield('content')
         </main>
     </div>

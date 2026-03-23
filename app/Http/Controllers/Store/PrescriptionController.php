@@ -18,7 +18,7 @@ class PrescriptionController extends Controller
             'prescription' => ['required','file','mimes:jpg,jpeg,png,pdf','max:4096'],
         ]);
 
-        $path = $request->file('prescription')->store('prescriptions', 'public');
+        $path = $request->file('prescription')->store('prescriptions', 'local');
 
         return back()->with('success', "Ordonnance envoyée avec succès.")->with('prescription_path', $path);
     }

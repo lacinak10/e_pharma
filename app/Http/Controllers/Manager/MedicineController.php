@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Medicine;
 use App\Services\StockService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class MedicineController extends Controller
@@ -54,7 +55,9 @@ class MedicineController extends Controller
             (int) $validated['alert_threshold']
         );
 
-        Medicine::create($validated);
+        $medicine = Medicine::create($validated);
+
+        Log::info('Medicine created', ['manager_id' => auth()->id(), 'medicine_id' => $medicine->id, 'name' => $medicine->name]);
 
         return redirect()->route('manager.medicines.index')->with('success', 'Médicament créé.');
     }
@@ -94,6 +97,8 @@ class MedicineController extends Controller
 
         $medicine->update($validated);
 
+        Log::info('Medicine updated', ['manager_id' => auth()->id(), 'medicine_id' => $medicine->id, 'name' => $medicine->name]);
+
         return redirect()->route('manager.medicines.index')->with('success', 'Médicament mis à jour.');
     }
 
@@ -102,6 +107,8 @@ class MedicineController extends Controller
         if (!empty($medicine->image_url)) {
             Storage::disk('public')->delete($medicine->image_url);
         }
+
+        Log::info('Medicine deleted', ['manager_id' => auth()->id(), 'medicine_id' => $medicine->id, 'name' => $medicine->name]);
 
         $medicine->delete();
 
