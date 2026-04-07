@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>@yield('title', 'E-PHARMA - Admin')</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('/assets/images/logo.jpeg') }}">
     <meta name="description" content="@yield('description', 'Espace Admin E-PHARMA')">
 
     {{-- Tailwind CDN --}}

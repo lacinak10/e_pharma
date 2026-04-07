@@ -5,10 +5,13 @@
 
 <header class="bg-white/90 backdrop-blur sticky top-0 z-50 border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-        <a href="{{ route('store.home') }}" class="flex items-center gap-2">
-            <i class="fa-solid fa-pills text-blue-600 text-2xl"></i>
-            <span class="text-xl font-extrabold text-blue-700 tracking-tight">E-PHARMA</span>
-        </a>
+       <a href="{{ route('store.home') }}" class="flex items-center gap-3 group">
+    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden shadow-sm border border-gray-200 bg-white flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+        <img src="{{ asset('/assets/images/logo.jpeg') }}" 
+             alt="logo" 
+             class="w-full h-full object-cover">
+    </div>
+</a>
 
         <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
             <a href="{{ route('store.home') }}" class="{{ request()->routeIs('store.home') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">Accueil</a>

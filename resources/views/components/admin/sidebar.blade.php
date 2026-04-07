@@ -175,9 +175,11 @@
 {{-- Desktop --}}
 <div class="hidden md:flex md:flex-shrink-0">
     <div class="flex flex-col w-72 bg-white border-r border-gray-200">
-        <div class="flex items-center justify-center h-16 px-4 bg-primary text-white">
-            <h1 class="text-xl font-bold tracking-wide">E-PHARMA</h1>
-        </div>
+       <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden shadow-sm border border-gray-200 bg-white flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+        <img src="{{ asset('/assets/images/logo.jpeg') }}" 
+             alt="logo" 
+             class="w-full h-full object-cover">
+    </div>
 
         <div class="flex flex-col flex-grow px-4 py-4 overflow-y-auto">
             <div class="flex items-center justify-between px-4 py-3 mb-3 text-sm font-medium text-gray-700 rounded-lg bg-gray-100">
