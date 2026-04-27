@@ -1,47 +1,94 @@
-/vendor
-/node_modules
+# =========================
+# Dependencies
+# =========================
+/vendor/
+/node_modules/
 
+# =========================
+# Vite / Frontend
+# =========================
+.vite/
+public/build/
+public/hot
+
+# =========================
 # Logs
+# =========================
 *.log
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+laravel.log
 
+# =========================
 # OS / Editor
+# =========================
 .DS_Store
 Thumbs.db
-/.vscode
-/.idea
-/.fleet
-/.zed
 
-# Laravel
+.vscode/
+.idea/
+.fleet/
+.zed/
+
+# =========================
+# Laravel Core
+# =========================
+/bootstrap/cache/*.php
 /bootstrap/compiled.php
-/storage/*.key
-/storage/pail
-/public/storage
-/public/hot
-/public/build
 
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/storage/pail
+
+/public/storage
+
+# =========================
 # Laravel (old / alt paths)
+# =========================
 /app/storage/
-/public_html/storage
+/public_html/storage/
 /public_html/hot
 
-# Env files
+# =========================
+# Environment files
+# =========================
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 
-# Config / local
+# =========================
+# Config / Local tools
+# =========================
 Homestead.yaml
 Homestead.json
-/.vagrant
+/.vagrant/
 /auth.json
 .phpactor.json
 
-# Cache / test
+# =========================
+# Testing / Cache
+# =========================
 .phpunit.result.cache
-/.phpunit.cache
+.phpunit.cache/
+coverage/
 
-# Optional
+# =========================
+# Optional / Packages
+# =========================
 /.nova
+
+# =========================
+# Build / Misc
+# =========================
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+.cache/
