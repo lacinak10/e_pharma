@@ -23,7 +23,7 @@ class CatalogController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('catalog.index', compact('medicines'));
+        return view('catalog.index', compact('medicines', 'q'));
     }
 
     public function show(Medicine $catalog)

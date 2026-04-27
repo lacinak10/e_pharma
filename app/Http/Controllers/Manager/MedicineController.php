@@ -42,6 +42,16 @@ class MedicineController extends Controller
         return view('admin.medicines.index', compact('medicines', 'categories', 'q', 'category', 'status'));
     }
 
+    public function create()
+    {
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('admin.medicines.create', compact('categories'));
+    }
+
     public function store(MedicineStoreRequest $request)
     {
         $validated = $request->validated();

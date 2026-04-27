@@ -10,39 +10,61 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Manager
-        User::firstOrCreate(
-            ['email' => 'manager@epharma.test'],
+        $users = [
+            // ── Managers ──────────────────────────────────────────────
             [
                 'name'      => 'Admin Manager',
-                'password'  => Hash::make('password'),
+                'email'     => 'manager@epharma.test',
+                'phone'     => null,
                 'role'      => 'manager',
-                'is_active' => true,
-            ]
-        );
+            ],
 
-        // Livreur
-        User::firstOrCreate(
-            ['email' => 'livreur@epharma.test'],
+            // ── Livreurs ──────────────────────────────────────────────
             [
                 'name'      => 'Jean Livreur',
+                'email'     => 'livreur@epharma.test',
                 'phone'     => '+225 07 00 00 00 01',
-                'password'  => Hash::make('password'),
                 'role'      => 'courier',
-                'is_active' => true,
-            ]
-        );
+            ],
+            [
+                'name'      => 'Oumar Koné',
+                'email'     => 'livreur2@epharma.test',
+                'phone'     => '+225 05 33 44 55 66',
+                'role'      => 'courier',
+            ],
+            [
+                'name'      => 'Aya Traoré',
+                'email'     => 'livreur3@epharma.test',
+                'phone'     => '+225 07 44 55 66 77',
+                'role'      => 'courier',
+            ],
+            [
+                'name'      => 'Moussa Bamba',
+                'email'     => 'livreur4@epharma.test',
+                'phone'     => '+225 01 55 66 77 88',
+                'role'      => 'courier',
+            ],
 
-        // Client
-        User::firstOrCreate(
-            ['email' => 'client@epharma.test'],
+            // ── Clients ───────────────────────────────────────────────
             [
                 'name'      => 'Marie Cliente',
+                'email'     => 'client@epharma.test',
                 'phone'     => '+225 07 00 00 00 02',
-                'password'  => Hash::make('password'),
                 'role'      => 'client',
-                'is_active' => true,
-            ]
-        );
+            ],
+        ];
+
+        foreach ($users as $data) {
+            User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name'      => $data['name'],
+                    'phone'     => $data['phone'],
+                    'password'  => Hash::make('password'),
+                    'role'      => $data['role'],
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }

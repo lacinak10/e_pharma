@@ -29,6 +29,7 @@ use App\Http\Controllers\Manager\CourierController;
 use App\Http\Controllers\Manager\UserController;
 
 use App\Http\Controllers\Courier\MyOrderController;
+use App\Http\Controllers\ProfileController as UserProfileController;
 
 //Page web
 
@@ -60,6 +61,13 @@ Route::name('store.')->group(function () {
     });
 });
 
+
+// Profil utilisateur (client)
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [UserProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [UserProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [UserProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
 // Catalogue public
 Route::resource('catalog', CatalogController::class)
