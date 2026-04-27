@@ -110,6 +110,12 @@
             'title' => 'Utilisateurs',
             'items' => [
                 [
+                    'href'   => url('/admin/users/create'),
+                    'icon'   => 'fa-solid fa-user-plus',
+                    'label'  => 'Créer un utilisateur',
+                    'active' => request()->is('admin/users/create'),
+                ],
+                [
                     'href'   => url('/admin/customers'),
                     'icon'   => 'fa-solid fa-users',
                     'label'  => 'Clients',

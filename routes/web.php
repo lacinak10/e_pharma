@@ -26,6 +26,7 @@ use App\Http\Controllers\Manager\AssignmentController;
 use App\Http\Controllers\Manager\DeliveryController;
 use App\Http\Controllers\Manager\CustomerController;
 use App\Http\Controllers\Manager\CourierController;
+use App\Http\Controllers\Manager\UserController;
 
 use App\Http\Controllers\Courier\MyOrderController;
 
@@ -46,7 +47,7 @@ Route::name('store.')->group(function () {
     Route::delete('/panier/vider', [CartController::class, 'clear'])->name('cart.clear');
 
     // Prescription + Checkout + Orders (auth + email vérifié)
-    Route::middleware(['auth', 'verified'])->group(function () {
+    Route::middleware(['auth'])->group(function () {
         Route::get('/scan-ordonnance', [PrescriptionController::class, 'create'])->name('prescriptions.create');
         Route::post('/scan-ordonnance', [PrescriptionController::class, 'store'])->name('prescriptions.store');
 
@@ -111,6 +112,10 @@ Route::middleware(['auth', EnsureRole::class . ':manager,courier'])->prefix('adm
             Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
             Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
             Route::resource('couriers', CourierController::class);
+
+            // Création d'utilisateurs (tous rôles)
+            Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('users', [UserController::class, 'store'])->name('users.store');
         });
     });
 
