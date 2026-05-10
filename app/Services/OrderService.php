@@ -91,6 +91,41 @@ class OrderService
     }
 
     /**
+     * Crée une commande depuis une ordonnance (sans articles panier).
+     *
+     * @param  int    $userId
+     * @param  string $prescriptionPath  Chemin relatif sur le disque local
+     * @param  array  $data              Champs validés (delivery_address, delivery_phone, notes, payment_method)
+     * @return Order
+     */
+    public function createFromPrescription(int $userId, string $prescriptionPath, array $data): Order
+    {
+        return DB::transaction(function () use ($userId, $prescriptionPath, $data) {
+            $deliveryFee = 1500;
+
+            $order = Order::create([
+                'user_id'           => $userId,
+                'status'            => OrderStatus::PENDING_ASSIGNMENT,
+                'delivery_address'  => $data['delivery_address'],
+                'delivery_phone'    => $data['delivery_phone'] ?? null,
+                'notes'             => $data['notes'] ?? null,
+                'payment_method'    => $data['payment_method'],
+                'subtotal'          => 0,
+                'delivery_fee'      => $deliveryFee,
+                'total_amount'      => $deliveryFee,
+                'has_prescription'  => true,
+                'prescription_path' => $prescriptionPath,
+            ]);
+
+            // Notifier tous les managers
+            $managers = User::where('role', User::ROLE_MANAGER)->get();
+            Notification::send($managers, new NewOrderNotification($order->load('user')));
+
+            return $order;
+        });
+    }
+
+    /**
      * Annule une commande et restaure le stock.
      */
     public function cancel(Order $order): void

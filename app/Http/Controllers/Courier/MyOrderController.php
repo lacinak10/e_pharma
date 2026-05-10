@@ -11,6 +11,7 @@ use App\Notifications\OrderStatusChangedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 class MyOrderController extends Controller
 {
@@ -107,5 +108,14 @@ class MyOrderController extends Controller
         Notification::send($managers, new OrderStatusChangedNotification($order, 'delivered'));
 
         return back()->with('success', 'Livraison confirmée.');
+    }
+
+    public function downloadPrescription(Order $order)
+    {
+        $assignment = $order->assignment;
+        abort_unless($assignment && $assignment->courier_id === Auth::id(), 403);
+        abort_unless($order->has_prescription && $order->prescription_path, 404);
+
+        return Storage::disk('local')->download($order->prescription_path);
     }
 }

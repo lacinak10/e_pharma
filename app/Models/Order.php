@@ -22,6 +22,8 @@ class Order extends Model
         'subtotal',
         'canceled_at',
         'delivered_at',
+        'prescription_path',
+        'has_prescription',
     ];
 
     protected $casts = [
@@ -29,6 +31,7 @@ class Order extends Model
         'total_amount' => 'integer',
         'canceled_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'has_prescription' => 'boolean',
     ];
 
     public function client()

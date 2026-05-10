@@ -68,7 +68,14 @@
             <tbody class="bg-white divide-y divide-gray-200">
             @forelse($orders as $o)
                 <tr>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">#EP-{{ $o->id }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                        #EP-{{ $o->id }}
+                        @if($o->has_prescription)
+                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                <i class="fa-solid fa-file-medical mr-1 text-xs"></i>Ord.
+                            </span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-sm text-gray-700">{{ $o->user?->name ?? 'Client' }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Str::limit($o->delivery_address, 35) }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">{{ number_format((int)$o->total_amount,0,',',' ') }} FCFA</td>

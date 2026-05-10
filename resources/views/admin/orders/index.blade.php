@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 
     $q = $q ?? request('q');
     $status = $status ?? request('status');
+    $withPrescription = $withPrescription ?? request()->boolean('with_prescription');
 
     $orderBadge = fn(OrderStatus $s) => match($s){
         OrderStatus::PENDING_ASSIGNMENT => 'yellow',
@@ -50,9 +51,15 @@ use App\Enums\OrderStatus;
                     </option>
                 @endforeach
             </x-admin.select>
+            <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer whitespace-nowrap">
+                <input type="checkbox" name="with_prescription" value="1"
+                    {{ $withPrescription ? 'checked' : '' }}
+                    class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                Avec ordonnance
+            </label>
             <x-admin.button type="submit" variant="outline" icon="fa-solid fa-magnifying-glass">Filtrer</x-admin.button>
 
-            @if($q || $status)
+            @if($q || $status || $withPrescription)
                 <a href="{{ route('manager.orders.index') }}"
                    class="px-3 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 text-sm">
                     Réinitialiser
@@ -78,7 +85,14 @@ use App\Enums\OrderStatus;
             <tbody class="bg-white divide-y divide-gray-200">
             @forelse($orders as $o)
                 <tr>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">#EP-{{ $o->id }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                        #EP-{{ $o->id }}
+                        @if($o->has_prescription)
+                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                <i class="fa-solid fa-file-medical mr-1 text-xs"></i>Ord.
+                            </span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-sm text-gray-700">{{ $o->user->name ?? 'Client' }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">
                         {{ $o->assignment?->courier?->name ?? '—' }}

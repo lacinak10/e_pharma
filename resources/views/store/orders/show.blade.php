@@ -51,6 +51,26 @@
         </div>
 
         <div class="space-y-6">
+            @if($order->has_prescription)
+            <div class="bg-purple-50 border border-purple-200 rounded-2xl p-6">
+                <h3 class="text-lg font-extrabold text-purple-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-medical text-purple-600"></i> Ordonnance
+                </h3>
+                <p class="mt-2 text-sm text-purple-800">Ordonnance jointe à cette commande.</p>
+
+                @if($order->total_amount <= 1500 && (int)$order->subtotal === 0)
+                    <div class="mt-3 text-xs text-purple-700 bg-purple-100 rounded-xl px-3 py-2">
+                        Le montant de vos médicaments sera ajouté après traitement de l'ordonnance.
+                    </div>
+                @endif
+
+                <a href="{{ route('store.prescriptions.download', $order) }}"
+                   class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition">
+                    <i class="fa-solid fa-download"></i> Télécharger l'ordonnance
+                </a>
+            </div>
+            @endif
+
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h3 class="text-lg font-extrabold">Livraison</h3>
                 <div class="mt-3 text-sm text-gray-700 space-y-2">

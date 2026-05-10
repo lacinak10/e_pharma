@@ -49,6 +49,21 @@
         </div>
     </div>
 
+    @if($order->has_prescription)
+    <div class="mt-6 p-5 rounded-xl bg-purple-50 border border-purple-200">
+        <div class="flex items-center gap-2 mb-3">
+            <i class="fa-solid fa-file-medical text-purple-600 text-lg"></i>
+            <span class="text-sm font-semibold text-purple-900">Ordonnance jointe</span>
+            @php $ext = strtoupper(pathinfo($order->prescription_path, PATHINFO_EXTENSION)); @endphp
+            <span class="ml-auto text-xs text-purple-600 font-mono">{{ $ext }}</span>
+        </div>
+        <a href="{{ route('courier.my_orders.prescription', $order) }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition">
+            <i class="fa-solid fa-download"></i> Télécharger l'ordonnance
+        </a>
+    </div>
+    @endif
+
     {{-- Actions livreur selon statut assignment --}}
     @php $a = $order->assignment; @endphp
     <div class="pt-4 border-t mt-6 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">

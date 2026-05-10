@@ -27,7 +27,14 @@
                 <tbody class="divide-y divide-gray-100">
                     @forelse($orders as $order)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 font-bold">#{{ $order->id }}</td>
+                            <td class="px-6 py-4 font-bold">
+                                #{{ $order->id }}
+                                @if($order->has_prescription)
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                        <i class="fa-solid fa-file-medical mr-1 text-xs"></i>Ordonnance
+                                    </span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-600">{{ $order->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-6 py-4 font-extrabold text-gray-900">
                                 {{ number_format((int)$order->total_amount, 0, ',', ' ') }} FCFA

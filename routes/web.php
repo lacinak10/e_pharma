@@ -58,6 +58,7 @@ Route::name('store.')->group(function () {
         Route::get('/mes-commandes', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/mes-commandes/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/mes-commandes/{order}/annuler', [OrderController::class, 'cancel'])->name('orders.cancel');
+        Route::get('/mes-commandes/{order}/ordonnance', [PrescriptionController::class, 'download'])->name('prescriptions.download');
     });
 });
 
@@ -110,6 +111,7 @@ Route::middleware(['auth', EnsureRole::class . ':manager,courier'])->prefix('adm
 
             // Commandes & livraisons
             Route::resource('orders', ManagerOrderController::class)->only(['index', 'show', 'update']);
+            Route::get('orders/{order}/ordonnance', [ManagerOrderController::class, 'downloadPrescription'])->name('orders.prescription');
 
             Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
             Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
@@ -138,5 +140,6 @@ Route::middleware(['auth', EnsureRole::class . ':manager,courier'])->prefix('adm
 
         Route::patch('my-orders/{order}/start', [MyOrderController::class, 'startDelivery'])->name('my_orders.start');
         Route::patch('my-orders/{order}/delivered', [MyOrderController::class, 'markDelivered'])->name('my_orders.delivered');
+        Route::get('my-orders/{order}/ordonnance', [MyOrderController::class, 'downloadPrescription'])->name('my_orders.prescription');
     });
 });
