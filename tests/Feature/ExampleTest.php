@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    // La page d'accueil interroge le catalogue : sans schéma, elle ne peut pas répondre.
+    use RefreshDatabase;
+
     /**
      * A basic test example.
      */
