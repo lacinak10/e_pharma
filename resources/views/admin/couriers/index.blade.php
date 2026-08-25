@@ -1,128 +1,97 @@
 @extends('layouts.admin')
 
-@section('title', 'E-PHARMA - Livreurs')
+@section('title', 'Livreurs — ePharma')
 @section('page_title', 'Livreurs')
+@section('page_subtitle', $couriers->total() . ' livreur(s) · note moyenne et charge en cours')
 
 @section('content')
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
-    </div>
-@endif
+    <x-ep.card flush>
+        <header class="ep-card__head">
+            <h2 class="ep-card__title">Équipe de livraison</h2>
 
-@php
-    $filters = $filters ?? ['q' => request('q'), 'status' => request('status')];
-@endphp
-
-<x-admin.card title="Livreurs" class="p-0">
-    <x-slot:actions>
-        <div class="flex gap-2">
-            <a href="{{ route('manager.couriers.create') }}"
-               class="px-4 py-2 rounded-lg bg-primary text-white hover:bg-secondary text-sm inline-flex items-center gap-2">
-                <i class="fa-solid fa-plus"></i> Ajouter
-            </a>
-        </div>
-    </x-slot:actions>
-
-    <div class="p-4 border-b">
-        <form method="GET" action="{{ route('manager.couriers.index') }}" class="flex flex-col md:flex-row gap-2 md:items-center">
-            <div class="flex-1">
-                <x-admin.input name="q" value="{{ $filters['q'] }}" placeholder="Nom, email, téléphone..." />
-            </div>
-
-            <div class="w-full md:w-56">
-                <x-admin.select name="status">
+            <form method="GET" class="ep-row ep-spacer" style="gap:.375rem">
+                <label class="ep-sr-only" for="q">Recherche</label>
+                <input class="ep-input" id="q" name="q" value="{{ $filters['q'] }}" placeholder="Nom, e-mail, téléphone…"
+                       style="width:200px;padding:.5rem .75rem;font-size:.8125rem">
+                <label class="ep-sr-only" for="status">État</label>
+                <select class="ep-select" id="status" name="status" style="width:auto;padding:.5rem .75rem;font-size:.8125rem">
                     <option value="">Tous</option>
-                    <option value="active" {{ $filters['status']==='active' ? 'selected' : '' }}>Actifs</option>
-                    <option value="inactive" {{ $filters['status']==='inactive' ? 'selected' : '' }}>Inactifs</option>
-                </x-admin.select>
+                    <option value="active" @selected($filters['status'] === 'active')>Actifs</option>
+                    <option value="inactive" @selected($filters['status'] === 'inactive')>Désactivés</option>
+                </select>
+                <button type="submit" class="ep-btn ep-btn--ghost ep-btn--sm">Filtrer</button>
+            </form>
+
+            <a href="{{ route('manager.couriers.create') }}" class="ep-btn ep-btn--primary ep-btn--md">Ajouter</a>
+        </header>
+
+        @if($couriers->isEmpty())
+            <x-ep.empty title="Aucun livreur." text="Ajoutez un livreur pour pouvoir attribuer les courses." />
+        @else
+            <div class="ep-table-wrap">
+                <table class="ep-table ep-table--cards">
+                    <thead>
+                        <tr>
+                            <th scope="col" colspan="2">Livreur</th>
+                            <th scope="col">Contact</th>
+                            <th scope="col">Zone</th>
+                            <th scope="col">Note</th>
+                            <th scope="col">Courses</th>
+                            <th scope="col">État</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($couriers as $courier)
+                            @php $stats = $statsByCourier[$courier->id] ?? null; @endphp
+                            <tr>
+                                <td data-label="" style="width:52px">
+                                    <img src="{{ $courier->avatar_url }}" alt=""
+                                         style="width:36px;height:36px;border-radius:50%;object-fit:cover">
+                                </td>
+                                <td data-label="Livreur" class="ep-cell-name">
+                                    <p style="font-size:.84375rem;font-weight:650;margin:0">{{ $courier->name }}</p>
+                                    <p class="ep-small" style="margin:0">{{ $courier->courierState() }}</p>
+                                </td>
+                                <td data-label="Contact">
+                                    <p class="ep-small" style="margin:0">{{ $courier->email }}</p>
+                                    @if($courier->phone)
+                                        <a href="tel:{{ preg_replace('/\s+/', '', $courier->phone) }}" class="ep-mono ep-small">{{ $courier->phone }}</a>
+                                    @endif
+                                </td>
+                                <td data-label="Zone"><span class="ep-small">{{ $courier->zone ?? '—' }}</span></td>
+                                <td data-label="Note">
+                                    <span class="ep-row ep-row--nowrap" style="gap:.375rem">
+                                        <span class="ep-stars" aria-hidden="true">{{ $courier->stars }}</span>
+                                        <span class="ep-mono ep-small">
+                                            {{ $courier->rating ? number_format($courier->rating, 1, ',', ' ') : '—' }}
+                                            ({{ $courier->reviews_count }})
+                                        </span>
+                                    </span>
+                                </td>
+                                <td data-label="Courses">
+                                    <span class="ep-cell-num">
+                                        {{ $stats->delivered ?? 0 }} livrée(s)
+                                        @if(($stats->in_progress ?? 0) > 0) · {{ $stats->in_progress }} en cours @endif
+                                    </span>
+                                </td>
+                                <td data-label="État">
+                                    <x-ep.badge :tone="$courier->is_active ? 'green' : 'neutral'"
+                                                :label="$courier->is_active ? 'Actif' : 'Désactivé'" />
+                                </td>
+                                <td data-label="Action">
+                                    <div class="ep-cell-actions">
+                                        <a href="{{ route('manager.couriers.show', $courier) }}" class="ep-btn ep-btn--ghost ep-btn--sm">Fiche</a>
+                                        <a href="{{ route('manager.couriers.edit', $courier) }}" class="ep-btn ep-btn--ghost ep-btn--sm">Modifier</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
+        @endif
+    </x-ep.card>
 
-            <x-admin.button type="submit" variant="outline" icon="fas fa-search">Filtrer</x-admin.button>
-
-            <a href="{{ route('manager.couriers.index') }}"
-               class="px-4 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 text-sm">
-                Reset
-            </a>
-        </form>
-    </div>
-
-    <x-admin.table>
-        <x-slot:head>
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Livreur</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assignées</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">En cours</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Livrées</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Refusées</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-        </x-slot:head>
-
-        @forelse($couriers as $c)
-            @php
-                $st = $statsByCourier->get($c->id);
-                $assigned = (int)($st->assigned ?? 0);
-                $inProgress = (int)($st->in_progress ?? 0);
-                $delivered = (int)($st->delivered ?? 0);
-                $refused = (int)($st->refused ?? 0);
-            @endphp
-
-            <tr class="border-t">
-                <td class="px-6 py-4">
-                    <div class="font-semibold text-gray-900">{{ $c->name }}</div>
-                    <div class="text-xs text-gray-500">#{{ $c->id }}</div>
-                </td>
-
-                <td class="px-6 py-4 text-sm text-gray-700">
-                    <div>{{ $c->email }}</div>
-                    <div class="text-xs text-gray-500">{{ $c->phone ?? '—' }}</div>
-                </td>
-
-                <td class="px-6 py-4">
-                    <x-admin.badge :text="$c->is_active ? 'Actif' : 'Inactif'" :variant="$c->is_active ? 'green' : 'red'" />
-                </td>
-
-                <td class="px-6 py-4"><x-admin.badge :text="$assigned" variant="blue" /></td>
-                <td class="px-6 py-4"><x-admin.badge :text="$inProgress" variant="indigo" /></td>
-                <td class="px-6 py-4"><x-admin.badge :text="$delivered" variant="green" /></td>
-                <td class="px-6 py-4"><x-admin.badge :text="$refused" variant="red" /></td>
-
-                <td class="px-6 py-4">
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('manager.couriers.show', $c) }}"
-                           class="px-3 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 text-sm inline-flex items-center gap-2">
-                            <i class="fa-regular fa-eye"></i> Détails
-                        </a>
-
-                        <a href="{{ route('manager.couriers.edit', $c) }}"
-                           class="px-3 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 text-sm inline-flex items-center gap-2">
-                            <i class="fa-regular fa-pen-to-square"></i> Modifier
-                        </a>
-
-                       
-
-                        <form method="POST" action="{{ route('manager.couriers.destroy', $c) }}"
-                              onsubmit="return confirm('Supprimer ce livreur ?');">
-                            @csrf @method('DELETE')
-                            <button class="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm inline-flex items-center gap-2">
-                                <i class="fa-regular fa-trash-can"></i> Supprimer
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="8" class="px-6 py-10">
-                    <x-admin.empty-state title="Aucun livreur" description="Aucun livreur trouvé." icon="fas fa-truck" />
-                </td>
-            </tr>
-        @endforelse
-    </x-admin.table>
-
-    <x-admin.pagination :paginator="$couriers" />
-</x-admin.card>
+    @if($couriers->hasPages()) {{ $couriers->links() }} @endif
 @endsection

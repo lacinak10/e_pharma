@@ -1,88 +1,90 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Catégories')
-@section('page_title','Catégories')
+@section('title', 'Catégories — ePharma')
+@section('page_title', 'Catégories')
+@section('page_subtitle', 'Comment le catalogue est rangé pour le client')
 
 @section('content')
-@php
-    $q = $q ?? request('q');
-@endphp
+    <div class="ep-split">
+        <x-ep.card flush style="order:2">
+            <header class="ep-card__head">
+                <h2 class="ep-card__title">{{ $categories->total() }} catégorie(s)</h2>
+                <form method="GET" class="ep-row ep-spacer" style="gap:.375rem">
+                    <label class="ep-sr-only" for="q">Nom</label>
+                    <input class="ep-input" id="q" name="q" value="{{ $q }}" placeholder="Nom…"
+                           style="width:160px;padding:.5rem .75rem;font-size:.8125rem">
+                    <button type="submit" class="ep-btn ep-btn--ghost ep-btn--sm">Filtrer</button>
+                </form>
+            </header>
 
-<x-admin.card title="Catégories" class="p-0">
-    <x-slot:actions>
-        <div class="flex gap-2">
-            <form method="GET" class="flex gap-2">
-                <x-admin.input name="q" value="{{ $q }}" placeholder="Rechercher une catégorie..." />
-                <x-admin.button type="submit" variant="outline" icon="fa-solid fa-magnifying-glass">Filtrer</x-admin.button>
+            @if($categories->isEmpty())
+                <x-ep.empty title="Aucune catégorie."
+                            text="Créez-en une pour ranger les médicaments du référentiel." />
+            @else
+                <div class="ep-table-wrap">
+                    <table class="ep-table ep-table--cards">
+                        <thead>
+                            <tr>
+                                <th scope="col">Catégorie</th>
+                                <th scope="col">Identifiant</th>
+                                <th scope="col">État</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($categories as $category)
+                                <tr>
+                                    <td data-label="Catégorie" class="ep-cell-name">
+                                        <span style="font-size:.84375rem;font-weight:650">{{ $category->name }}</span>
+                                    </td>
+                                    <td data-label="Identifiant"><span class="ep-mono ep-small">{{ $category->slug }}</span></td>
+                                    <td data-label="État">
+                                        <x-ep.badge :tone="$category->is_active ? 'green' : 'neutral'"
+                                                    :label="$category->is_active ? 'Active' : 'Désactivée'" />
+                                    </td>
+                                    <td data-label="Action">
+                                        <div class="ep-cell-actions">
+                                            <a href="{{ route('manager.categories.edit', $category) }}" class="ep-btn ep-btn--ghost ep-btn--sm">Modifier</a>
+                                            @if($category->is_active)
+                                                <form method="POST" action="{{ route('manager.categories.destroy', $category) }}">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="ep-btn ep-btn--danger-soft ep-btn--sm">Désactiver</button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            @if($categories->hasPages())
+                <x-slot:footer>{{ $categories->links() }}</x-slot:footer>
+            @endif
+        </x-ep.card>
+
+        <x-ep.card title="Nouvelle catégorie" style="order:1">
+            <form method="POST" action="{{ route('manager.categories.store') }}">
+                @csrf
+                <div class="ep-field">
+                    <label class="ep-label" for="name">Nom</label>
+                    <input class="ep-input" id="name" name="name" required maxlength="255"
+                           value="{{ old('name') }}" placeholder="Douleur et fièvre">
+                    <p class="ep-hint">L'identifiant est généré automatiquement.</p>
+                    <x-input-error :messages="$errors->get('name')" class="ep-error" />
+                </div>
+
+                <label class="ep-choice" style="margin-top:.875rem">
+                    <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))>
+                    Visible dans le catalogue client
+                </label>
+
+                <button type="submit" class="ep-btn ep-btn--primary ep-btn--block" style="margin-top:1rem">
+                    Créer la catégorie
+                </button>
             </form>
-
-            <x-admin.button type="button" variant="primary" icon="fa-solid fa-plus" data-modal-open="addCategoryModal">
-                Ajouter
-            </x-admin.button>
-        </div>
-    </x-slot:actions>
-
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($categories as $c)
-                    <tr>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $c->name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ $c->slug }}</td>
-                        <td class="px-6 py-4">
-                            <x-admin.badge :text="$c->is_active ? 'Active' : 'Inactive'" :variant="$c->is_active ? 'green' : 'red'" />
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500 flex gap-3">
-                            <a href="{{ route('manager.categories.edit',$c) }}" class="text-primary hover:text-secondary" title="Modifier">
-                                <i class="fa-regular fa-pen-to-square"></i>
-                            </a>
-                            <form method="POST" action="{{ route('manager.categories.destroy',$c) }}" onsubmit="return confirm('Désactiver cette catégorie ?')">
-                                @csrf @method('DELETE')
-                                <button class="text-danger hover:opacity-80" title="Désactiver">
-                                    <i class="fa-regular fa-trash-can"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="4" class="px-6 py-10">
-                        <x-admin.empty-state title="Aucune catégorie" description="Crée ta première catégorie." icon="fa-solid fa-tags" />
-                    </td></tr>
-                @endforelse
-            </tbody>
-        </table>
+        </x-ep.card>
     </div>
-
-    <x-admin.pagination :paginator="$categories" />
-</x-admin.card>
 @endsection
-
-@push('modals')
-<x-admin.modal id="addCategoryModal" title="Ajouter une catégorie">
-    <form method="POST" action="{{ route('manager.categories.store') }}" class="space-y-4">
-        @csrf
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-            <x-admin.input name="name" placeholder="Ex: Antibiotique" />
-        </div>
-
-        <div class="flex items-center gap-2">
-            <input type="checkbox" name="is_active" value="1" checked class="h-4 w-4 border-gray-300 rounded">
-            <span class="text-sm text-gray-700">Active</span>
-        </div>
-
-        <div class="pt-4 border-t flex justify-end gap-2">
-            <x-admin.button type="button" variant="outline" data-modal-close="addCategoryModal">Annuler</x-admin.button>
-            <x-admin.button type="submit" variant="primary">Enregistrer</x-admin.button>
-        </div>
-    </form>
-</x-admin.modal>
-@endpush

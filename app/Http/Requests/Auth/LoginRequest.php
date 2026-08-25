@@ -49,6 +49,21 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Un compte désactivé par le manager ne doit pas ouvrir de session :
+        // sans ce contrôle, la bascule « actif / inactif » du back-office
+        // n'aurait aucun effet réel.
+        if (Auth::user()->isDeactivated()) {
+            // On se contente de déconnecter : invalider la session ici viderait
+            // le flash et le visiteur repartirait sans explication.
+            Auth::guard('web')->logout();
+
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Ce compte a été désactivé. Contactez la pharmacie pour le réactiver.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

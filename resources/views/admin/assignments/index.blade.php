@@ -1,91 +1,91 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Affectations')
-@section('page_title','Affectations')
+@section('title', 'Attribution des livreurs — ePharma')
+@section('page_title', 'Attribution du livreur')
+@section('page_subtitle', 'Commandes validées, en attente d’un livreur')
 
 @section('content')
-@php
-    use App\Enums\AssignmentStatus;
-    $status = $status ?? request('status');
-    $statusOptions = [
-        ''                              => 'Tous',
-        AssignmentStatus::ASSIGNED->value   => 'Assignée',
-        AssignmentStatus::ACCEPTED->value   => 'Acceptée',
-        AssignmentStatus::DELIVERING->value => 'En livraison',
-        AssignmentStatus::DELIVERED->value  => 'Livrée',
-        AssignmentStatus::REFUSED->value    => 'Refusée',
-    ];
-@endphp
+    @forelse($orders as $order)
+        <x-ep.card flush>
+            <header class="ep-card__head">
+                <h2 class="ep-card__title">{{ $order->reference }}</h2>
+                <span class="ep-mono ep-small">
+                    {{ $order->client?->short_name }} · {{ $order->delivery_address }}
+                    @if($order->pharmacy) · départ {{ $order->pharmacy->name }} @endif
+                </span>
+                <span class="ep-spacer"><x-ep.badge :status="$order->status" /></span>
+            </header>
 
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
-    </div>
-@endif
-
-<x-admin.card title="Affectations" class="p-0">
-    <x-slot:actions>
-        <form method="GET" class="flex gap-2 items-center">
-            <x-admin.select name="status">
-                @foreach($statusOptions as $val => $txt)
-                    <option value="{{ $val }}" {{ (string)$status === (string)$val ? 'selected' : '' }}>
-                        {{ $txt }}
-                    </option>
-                @endforeach
-            </x-admin.select>
-            <x-admin.button type="submit" variant="outline" icon="fa-solid fa-magnifying-glass">Filtrer</x-admin.button>
-
-            @if($status)
-                <a href="{{ route('manager.assignments.index') }}"
-                   class="px-3 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 text-sm">
-                    Réinitialiser
-                </a>
-            @endif
-        </form>
-    </x-slot:actions>
-
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commande</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Livreur</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assignée le</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-            </thead>
-
-            <tbody class="bg-white divide-y divide-gray-200">
-            @forelse($assignments as $a)
-                <tr>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">#EP-{{ $a->order_id }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $a->order?->user?->name ?? 'Client' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $a->courier?->name ?? '—' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">{{ optional($a->assigned_at)->format('d/m/Y H:i') }}</td>
-                    <td class="px-6 py-4">
-                        <x-admin.badge :text="$a->status->label()" :variant="$a->status->badge()" />
-                    </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">{{ $a->note ?? '—' }}</td>
-                    <td class="px-6 py-4 text-sm">
-                        @if($a->order_id)
-                            <a href="{{ route('manager.orders.show',$a->order_id) }}" class="text-primary hover:text-secondary" title="Voir commande">
-                                <i class="fa-regular fa-eye"></i>
-                            </a>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-6 py-10">
-                    <x-admin.empty-state title="Aucune affectation" description="Aucune affectation trouvée." icon="fa-solid fa-user-check" />
-                </td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <x-admin.pagination :paginator="$assignments" />
-</x-admin.card>
+            <div class="ep-table-wrap">
+                <table class="ep-table ep-table--cards">
+                    <thead>
+                        <tr>
+                            <th scope="col" colspan="2">Livreur</th>
+                            <th scope="col">Distance</th>
+                            <th scope="col">État</th>
+                            <th scope="col">Note</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($couriers as $index => $courier)
+                            <tr @if($index === 0) style="background:#F6FBF8" @endif>
+                                <td data-label="" style="width:44px">
+                                    <img src="{{ $courier->avatar_url }}" alt=""
+                                         style="width:36px;height:36px;border-radius:50%;object-fit:cover">
+                                </td>
+                                <td data-label="Livreur">
+                                    <p style="font-size:.84375rem;font-weight:650;display:flex;align-items:center;gap:.5rem;margin:0">
+                                        {{ $courier->short_name }}
+                                        @if($index === 0)<span class="ep-badge ep-badge--green">Suggéré</span>@endif
+                                    </p>
+                                    <p class="ep-mono ep-small" style="margin:0">{{ $courier->phone ?? '—' }}</p>
+                                </td>
+                                <td data-label="Distance">
+                                    <span class="ep-cell-num" style="color:var(--ep-blue)">
+                                        {{ $courier->distance_km !== null ? number_format($courier->distance_km, 1, ',', ' ') . ' km' : '—' }}
+                                    </span>
+                                </td>
+                                <td data-label="État">
+                                    @php $tone = $courier->state === 'Disponible' ? 'green' : ($courier->state === 'En pharmacie' ? 'amber' : 'blue'); @endphp
+                                    <x-ep.badge :tone="$tone" :label="$courier->state" />
+                                </td>
+                                <td data-label="Note">
+                                    <span class="ep-row ep-row--nowrap" style="gap:.5rem">
+                                        <span class="ep-stars" aria-hidden="true">{{ $courier->stars }}</span>
+                                        <span class="ep-mono ep-small">
+                                            {{ $courier->rating ? number_format($courier->rating, 1, ',', ' ') : '—' }} ·
+                                            {{ $courier->load }} course(s)
+                                        </span>
+                                    </span>
+                                </td>
+                                <td data-label="Action">
+                                    <form method="POST" action="{{ route('manager.assignments.store') }}" class="ep-row" style="gap:.375rem">
+                                        @csrf
+                                        <input type="hidden" name="order_id" value="{{ $order->id }}">
+                                        <input type="hidden" name="courier_id" value="{{ $courier->id }}">
+                                        <label class="ep-sr-only" for="eta-{{ $order->id }}-{{ $courier->id }}">Délai estimé</label>
+                                        <input class="ep-input" style="width:74px;padding:.375rem .5rem;font-size:.75rem"
+                                               id="eta-{{ $order->id }}-{{ $courier->id }}" type="number" name="eta_minutes"
+                                               min="5" max="180" placeholder="min">
+                                        <button type="submit" class="ep-btn ep-btn--sm {{ $index === 0 ? 'ep-btn--primary' : 'ep-btn--ghost' }}"
+                                                @disabled($courier->state === 'Indisponible')>Attribuer</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </x-ep.card>
+    @empty
+        <x-ep.card>
+            <x-ep.empty title="Aucune commande à attribuer."
+                        text="Les commandes dont la disponibilité est confirmée arrivent ici pour être confiées à un livreur.">
+                <x-slot:actions>
+                    <a href="{{ route('manager.verifications.index') }}" class="ep-btn ep-btn--ghost">Voir les vérifications</a>
+                </x-slot:actions>
+            </x-ep.empty>
+        </x-ep.card>
+    @endforelse
 @endsection

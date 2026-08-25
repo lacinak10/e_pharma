@@ -1,208 +1,209 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Détail commande')
-@section('page_title','Détail commande')
+@section('title', 'Commande ' . $order->reference . ' — ePharma')
+@section('page_title', 'Commande ' . $order->reference)
+@section('page_subtitle', $order->client?->name . ' · ' . $order->created_at->locale('fr')->isoFormat('D MMMM YYYY à HH:mm'))
 
 @section('content')
-@php
-use App\Enums\OrderStatus;
-use App\Enums\AssignmentStatus;
+    <div class="ep-split">
+        <div class="ep-stack">
 
-    $orderBadge = fn(OrderStatus $s) => match($s){
-        OrderStatus::PENDING_ASSIGNMENT => 'yellow',
-        OrderStatus::ASSIGNED           => 'blue',
-        OrderStatus::ACCEPTED           => 'orange',
-        OrderStatus::IN_DELIVERY        => 'indigo',
-        OrderStatus::DELIVERED          => 'green',
-        OrderStatus::REFUSED            => 'red',
-        OrderStatus::CANCELED           => 'red',
-        default                         => 'gray',
-    };
-
-    $statusOptions = [
-        OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
-        OrderStatus::ASSIGNED->value           => 'Affectée',
-        OrderStatus::ACCEPTED->value           => 'Acceptée',
-        OrderStatus::IN_DELIVERY->value        => 'En livraison',
-        OrderStatus::DELIVERED->value          => 'Livrée',
-        OrderStatus::REFUSED->value            => 'Refusée',
-        OrderStatus::CANCELED->value           => 'Annulée',
-    ];
-@endphp
-
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
-    </div>
-@endif
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-    {{-- Colonne gauche: infos --}}
-    <x-admin.card title="Informations" class="lg:col-span-2">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <div class="text-sm text-gray-500">Commande</div>
-                <div class="text-2xl font-bold text-gray-900">#EP-{{ $order->id }}</div>
-                <div class="text-sm text-gray-500 mt-1">
-                    Créée: {{ optional($order->created_at)->format('d/m/Y H:i') }}
+            {{-- Où en est la commande --}}
+            <x-ep.card>
+                <div class="ep-row" style="justify-content:space-between">
+                    <div class="ep-row">
+                        <x-ep.badge :status="$order->status" />
+                        <span class="ep-small">{{ $order->status->label() }}</span>
+                    </div>
+                    <span class="ep-mono ep-small">Étape {{ $order->status->number() }} / 14 · {{ $order->status->actor() }}</span>
                 </div>
-            </div>
-            <div>
-                <x-admin.badge :text="$order->status->label()" :variant="$orderBadge($order->status)" />
-            </div>
-        </div>
 
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Client</div>
-                <div class="text-sm font-semibold text-gray-800">{{ $order->user->name ?? 'Client' }}</div>
-            </div>
-            <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Téléphone</div>
-                <div class="text-sm font-semibold text-gray-800">{{ $order->delivery_phone ?? '—' }}</div>
-            </div>
-            <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 md:col-span-2">
-                <div class="text-xs text-gray-500">Adresse de livraison</div>
-                <div class="text-sm font-semibold text-gray-800">{{ $order->delivery_address }}</div>
-            </div>
-            @if($order->notes)
-            <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 md:col-span-2">
-                <div class="text-xs text-gray-500">Notes</div>
-                <div class="text-sm text-gray-700">{{ $order->notes }}</div>
-            </div>
+                @if($order->refusal_reason)
+                    <p class="ep-flash ep-flash--error" style="margin-top:1rem">Motif du refus : {{ $order->refusal_reason }}</p>
+                @endif
+                @if($order->cancel_reason)
+                    <p class="ep-flash ep-flash--info" style="margin-top:1rem">Motif de l'annulation : {{ $order->cancel_reason }}</p>
+                @endif
+
+                @if($order->status->needsManager())
+                    <a href="{{ route('manager.verifications.show', $order) }}" class="ep-btn ep-btn--primary" style="margin-top:1rem">
+                        Ouvrir la fiche de vérification
+                    </a>
+                @endif
+            </x-ep.card>
+
+            {{-- Suivi livreur --}}
+            @if($order->status->deliveryStep() !== null)
+                <x-ep.card title="Progression de la livraison">
+                    <x-ep.timeline :order="$order" />
+                </x-ep.card>
             @endif
+
+            {{-- Contenu --}}
+            <x-ep.card title="Contenu de la commande" flush>
+                <div class="ep-table-wrap">
+                    <table class="ep-table ep-table--cards">
+                        <thead>
+                            <tr>
+                                <th scope="col">Médicament</th>
+                                <th scope="col">Pharmacie</th>
+                                <th scope="col">Disponibilité</th>
+                                <th scope="col">Qté</th>
+                                <th scope="col">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($order->items as $item)
+                                <tr>
+                                    <td data-label="Médicament">
+                                        <p style="font-size:.84375rem;font-weight:650;margin:0">
+                                            {{ $item->medicine_name }}
+                                            @if($item->requires_prescription)<span class="ep-badge ep-badge--rx">RX</span>@endif
+                                        </p>
+                                        <p class="ep-mono ep-small" style="margin:0">{{ $item->pack }}</p>
+                                    </td>
+                                    <td data-label="Pharmacie"><span class="ep-small">{{ $item->pharmacy?->name ?? '—' }}</span></td>
+                                    <td data-label="Disponibilité">
+                                        <span class="ep-badge" style="background:{{ $item->availability->tint() }};color:{{ $item->availability->color() }}">
+                                            {{ $item->availability->label() }}
+                                        </span>
+                                    </td>
+                                    <td data-label="Qté"><span class="ep-cell-num">{{ $item->quantity }}</span></td>
+                                    <td data-label="Total"><span class="ep-cell-num">{{ number_format($item->line_total, 0, ',', ' ') }} F</span></td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" data-label="">
+                                        <span class="ep-small">Commande sur ordonnance, contenu non encore établi.</span>
+                                        @if(in_array($order->status, [\App\Enums\OrderStatus::PENDING_VALIDATION, \App\Enums\OrderStatus::CHECKING], true))
+                                            <a href="{{ route('manager.verifications.show', $order) }}" class="ep-btn ep-btn--ghost ep-btn--sm" style="margin-left:.5rem">
+                                                Composer le panier
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <x-slot:footer>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-small">Sous-total</span>
+                        <span class="ep-mono ep-small">{{ number_format($order->subtotal, 0, ',', ' ') }} F</span>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
+                        <span class="ep-small">Livraison</span>
+                        <span class="ep-mono ep-small">{{ number_format($order->delivery_fee, 0, ',', ' ') }} F</span>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.625rem;padding-top:.625rem;border-top:1px solid var(--ep-rule)">
+                        <strong style="font-size:.9375rem">Total</strong>
+                        <strong class="ep-mono" style="font-size:1.0625rem">{{ number_format($order->total_amount, 0, ',', ' ') }} F</strong>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
+                        <span class="ep-small">Paiement</span>
+                        <span class="ep-small">{{ $order->payment_label }}</span>
+                    </div>
+                </x-slot:footer>
+            </x-ep.card>
+
+            {{-- Journal --}}
+            <x-ep.card title="Journal de la commande" flush>
+                <div class="ep-feed" style="padding:.375rem 0">
+                    @forelse($order->events as $event)
+                        <article class="ep-feed__item">
+                            <time class="ep-feed__time" datetime="{{ $event->created_at->toIso8601String() }}">
+                                {{ $event->created_at->format('H:i') }}
+                            </time>
+                            <div style="min-width:0">
+                                <p class="ep-feed__text">{{ $event->message }}</p>
+                                <span class="ep-feed__tag" style="color:{{ $event->color }}">
+                                    {{ $event->tag }}@if($event->author) · {{ $event->author->short_name }}@endif
+                                </span>
+                            </div>
+                        </article>
+                    @empty
+                        <p class="ep-small" style="padding:.75rem 1rem;margin:0">Aucun événement.</p>
+                    @endforelse
+                </div>
+            </x-ep.card>
         </div>
 
-        <div class="mt-6">
-            <div class="text-sm font-semibold text-gray-800 mb-2">Articles</div>
-            <div class="overflow-x-auto rounded-lg border border-gray-200">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qté</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">PU</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                    </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($order->items as $it)
-                        <tr>
-                            <td class="px-5 py-3 text-sm text-gray-800">{{ $it->medicine->name ?? 'Produit' }}</td>
-                            <td class="px-5 py-3 text-sm text-gray-700">{{ $it->quantity }}</td>
-                            <td class="px-5 py-3 text-sm text-gray-700">{{ number_format((int)$it->unit_price,0,',',' ') }} FCFA</td>
-                            <td class="px-5 py-3 text-sm font-semibold text-gray-900">{{ number_format((int)$it->line_total,0,',',' ') }} FCFA</td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                    <tfoot class="bg-gray-50">
-                    <tr>
-                        <td class="px-5 py-3 text-sm text-gray-600" colspan="3">Sous-total</td>
-                        <td class="px-5 py-3 text-sm font-semibold text-gray-900">{{ number_format((int)$order->subtotal,0,',',' ') }} FCFA</td>
-                    </tr>
-                    <tr>
-                        <td class="px-5 py-3 text-sm text-gray-600" colspan="3">Frais livraison</td>
-                        <td class="px-5 py-3 text-sm font-semibold text-gray-900">{{ number_format((int)$order->delivery_fee,0,',',' ') }} FCFA</td>
-                    </tr>
-                    <tr>
-                        <td class="px-5 py-3 text-sm text-gray-900 font-semibold" colspan="3">Total</td>
-                        <td class="px-5 py-3 text-sm font-bold text-gray-900">{{ number_format((int)$order->total_amount,0,',',' ') }} FCFA</td>
-                    </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-        @if($order->has_prescription)
-        <div class="mt-6 p-5 rounded-xl bg-purple-50 border border-purple-200">
-            <div class="flex items-center gap-2 mb-3">
-                <i class="fa-solid fa-file-medical text-purple-600 text-lg"></i>
-                <span class="text-sm font-semibold text-purple-900">Ordonnance</span>
-                @php $ext = strtoupper(pathinfo($order->prescription_path, PATHINFO_EXTENSION)); @endphp
-                <span class="ml-auto text-xs text-purple-600 font-mono">{{ $ext }}</span>
-            </div>
-            <a href="{{ route('manager.orders.prescription', $order) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition">
-                <i class="fa-solid fa-download"></i> Télécharger l'ordonnance
-            </a>
-        </div>
-        @endif
-    </x-admin.card>
+        <div class="ep-stack">
+            <x-ep.card title="Client">
+                <p style="font-size:.9375rem;font-weight:650;margin:0">{{ $order->client?->name }}</p>
+                <p class="ep-small" style="margin:.25rem 0 0">{{ $order->delivery_address }}</p>
+                @if($order->delivery_phone)
+                    <a href="tel:{{ preg_replace('/\s+/', '', $order->delivery_phone) }}" class="ep-mono ep-small">{{ $order->delivery_phone }}</a>
+                @endif
+                @if($order->notes)
+                    <p class="ep-quote" style="margin-top:.75rem">« {{ $order->notes }} »</p>
+                @endif
+            </x-ep.card>
 
-    {{-- Colonne droite: actions --}}
-    <div class="space-y-4">
-
-        <x-admin.card title="Affectation livreur">
             @if($order->assignment?->courier)
-                <div class="p-3 rounded-lg bg-gray-50 border border-gray-100 mb-3">
-                    <div class="text-xs text-gray-500">Livreur actuel</div>
-                    <div class="text-sm font-semibold text-gray-900">{{ $order->assignment->courier->name }}</div>
-                    <div class="text-xs text-gray-500 mt-1">Statut assignment: {{ $order->assignment->status->label() }}</div>
-                </div>
+                <x-ep.card title="Livreur">
+                    <x-ep.courier-card :courier="$order->assignment->courier" :eta="$order->eta_minutes" />
+                    @if($order->delivery_code)
+                        <p class="ep-small" style="margin:1rem 0 0">
+                            Code de confirmation : <strong class="ep-mono">{{ $order->delivery_code }}</strong>
+                        </p>
+                    @endif
+                </x-ep.card>
+            @elseif($order->status === \App\Enums\OrderStatus::AVAILABLE || $order->status === \App\Enums\OrderStatus::PARTIALLY_AVAILABLE)
+                <x-ep.card title="Attribuer un livreur">
+                    <form method="POST" action="{{ route('manager.assignments.store') }}" class="ep-stack" style="gap:.75rem">
+                        @csrf
+                        <input type="hidden" name="order_id" value="{{ $order->id }}">
+                        <div class="ep-field">
+                            <label class="ep-label" for="courier_id">Livreur</label>
+                            <select class="ep-select" id="courier_id" name="courier_id" required>
+                                @foreach($couriers as $courier)
+                                    <option value="{{ $courier->id }}">{{ $courier->name }} — {{ $courier->phone }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="ep-field">
+                            <label class="ep-label" for="eta_minutes">Délai estimé (min)</label>
+                            <input class="ep-input ep-mono" id="eta_minutes" type="number" name="eta_minutes" min="5" max="180" placeholder="auto">
+                        </div>
+                        <button type="submit" class="ep-btn ep-btn--primary ep-btn--block">Attribuer</button>
+                    </form>
+                </x-ep.card>
             @endif
 
-            <form method="POST" action="{{ route('manager.assignments.store') }}" class="space-y-3">
-                @csrf
-                <input type="hidden" name="order_id" value="{{ $order->id }}"/>
+            @if($order->has_prescription)
+                <x-ep.prescription-viewer
+                    :order="$order"
+                    :download-url="$order->prescription_path ? route('manager.orders.prescription', $order) : null" />
+            @endif
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Choisir un livreur</label>
-                    <x-admin.select name="courier_id">
-                        <option value="">Sélectionner</option>
-                        @foreach($couriers as $c)
-                            <option value="{{ $c->id }}" {{ (int)old('courier_id') === (int)$c->id ? 'selected' : '' }}>
-                                {{ $c->name }}
-                            </option>
-                        @endforeach
-                    </x-admin.select>
-                </div>
+            @if($order->review)
+                <x-ep.card title="Avis du client">
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-stars" style="font-size:1rem;letter-spacing:1.5px">{{ $order->review->stars }}</span>
+                        <time class="ep-mono ep-small">{{ $order->review->created_at->locale('fr')->isoFormat('D MMM YYYY') }}</time>
+                    </div>
+                    @if($order->review->comment)
+                        <p class="ep-body" style="margin:.875rem 0 0">« {{ $order->review->comment }} »</p>
+                    @endif
+                </x-ep.card>
+            @endif
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Note (optionnel)</label>
-                    <x-admin.input name="note" value="{{ old('note') }}" placeholder="Ex: Appeler avant d'arriver" />
-                </div>
-
-                <x-admin.button type="submit" variant="primary" icon="fa-solid fa-user-check">
-                    Affecter
-                </x-admin.button>
-
-                <p class="text-xs text-gray-500 mt-2">
-                    Astuce: après affectation, la commande passe en “Affectée”.
-                </p>
-            </form>
-        </x-admin.card>
-
-        <x-admin.card title="Statut commande">
-            <form method="POST" action="{{ route('manager.orders.update',$order) }}" class="space-y-3">
-                @csrf
-                @method('PUT')
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Changer statut</label>
-                    <x-admin.select name="status">
-                        @foreach($statusOptions as $val => $txt)
-                            <option value="{{ $val }}" {{ $order->status->value === $val ? 'selected' : '' }}>
-                                {{ $txt }}
-                            </option>
-                        @endforeach
-                    </x-admin.select>
-                </div>
-
-                <x-admin.button type="submit" variant="outline" icon="fa-solid fa-rotate">
-                    Mettre à jour
-                </x-admin.button>
-            </form>
-
-            <div class="pt-4 border-t mt-4 flex justify-between">
-                <a href="{{ route('manager.orders.index') }}" class="text-sm text-gray-700 hover:text-gray-900">
-                    ← Retour
-                </a>
-                <span class="text-xs text-gray-500">
-                    Livrée le: {{ $order->delivered_at ? $order->delivered_at->format('d/m/Y H:i') : '—' }}
-                </span>
-            </div>
-        </x-admin.card>
-
+            @can('cancel', $order)
+                <x-ep.card title="Annuler la commande">
+                    <form method="POST" action="{{ route('manager.orders.cancel', $order) }}">
+                        @csrf
+                        <div class="ep-field">
+                            <label class="ep-label" for="cancel-reason">Motif</label>
+                            <input class="ep-input" id="cancel-reason" name="reason" maxlength="255" placeholder="Motif communiqué au client">
+                        </div>
+                        <button type="submit" class="ep-btn ep-btn--danger-soft ep-btn--block" style="margin-top:.75rem">
+                            Annuler la commande
+                        </button>
+                    </form>
+                </x-ep.card>
+            @endcan
+        </div>
     </div>
-</div>
 @endsection

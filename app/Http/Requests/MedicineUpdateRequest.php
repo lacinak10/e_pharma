@@ -2,76 +2,21 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class MedicineUpdateRequest extends FormRequest
+class MedicineUpdateRequest extends MedicineStoreRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
-        $medicineId = $this->route('medicine')?->id; // route-model-binding
-
         return [
-            'category_id' => ['required','integer','exists:categories,id'],
-            'name' => ['required','string','max:255'],
-
-            // unique sauf l’item en cours
+            ...parent::rules(),
             'reference' => [
-                'required','string','max:100',
-                Rule::unique('medicines','reference')->ignore($medicineId)
+                'nullable', 'string', 'max:100',
+                Rule::unique('medicines', 'reference')->ignore($this->route('medicine')),
             ],
-
-            'description' => ['nullable','string','max:2000'],
-            'price' => ['required','integer','min:0'],
-
-            'stock' => ['required','integer','min:0'],
-            'alert_threshold' => ['required','integer','min:0'],
-
-            'image_url' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
-            'is_active' => ['nullable','boolean'],
         ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'category_id.required' => 'La catégorie est obligatoire.',
-            'category_id.exists' => 'La catégorie sélectionnée est invalide.',
-
-            'name.required' => 'Le nom du produit est obligatoire.',
-
-            'reference.required' => 'La référence (SKU) est obligatoire.',
-            'reference.unique' => 'Cette référence existe déjà.',
-
-            'price.required' => 'Le prix est obligatoire.',
-            'price.integer' => 'Le prix doit être un nombre.',
-            'price.min' => 'Le prix ne peut pas être négatif.',
-
-            'stock.required' => 'Le stock est obligatoire.',
-            'stock.integer' => 'Le stock doit être un nombre.',
-            'stock.min' => 'Le stock ne peut pas être négatif.',
-
-            'alert_threshold.required' => "Le seuil d'alerte est obligatoire.",
-            'alert_threshold.integer' => "Le seuil d'alerte doit être un nombre.",
-            'alert_threshold.min' => "Le seuil d'alerte ne peut pas être négatif.",
-
-            'image_url.image' => 'Le fichier doit être une image.',
-            'image_url.mimes' => 'Formats acceptés : jpg, jpeg, png, webp.',
-            'image_url.max' => 'Image trop grande (max 2MB).',
-        ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'name' => is_string($this->name) ? trim($this->name) : $this->name,
-            'reference' => is_string($this->reference) ? trim($this->reference) : $this->reference,
-            'is_active' => (bool)($this->is_active ?? true),
-        ]);
     }
 }

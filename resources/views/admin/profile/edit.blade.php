@@ -1,42 +1,62 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Mon profil')
-@section('page_title','Mon profil')
+@section('title', 'Mon profil — ePharma')
+@section('page_title', 'Mon profil')
 
 @section('content')
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
+    <div class="ep-split">
+        <form method="POST" action="{{ route('admin.profile.update') }}">
+            @csrf @method('PUT')
+
+            <x-ep.card title="Mes informations">
+                <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:1rem">
+                    <div class="ep-field">
+                        <label class="ep-label" for="name">Nom</label>
+                        <input class="ep-input" id="name" name="name" required maxlength="255"
+                               value="{{ old('name', $user->name) }}">
+                        <x-input-error :messages="$errors->get('name')" class="ep-error" />
+                    </div>
+
+                    <div class="ep-field">
+                        <label class="ep-label" for="email">E-mail</label>
+                        <input class="ep-input" id="email" name="email" type="email" required maxlength="255"
+                               value="{{ old('email', $user->email) }}">
+                        <x-input-error :messages="$errors->get('email')" class="ep-error" />
+                    </div>
+
+                    <div class="ep-field">
+                        <label class="ep-label" for="password">
+                            Nouveau mot de passe <span class="ep-hint">(laisser vide pour conserver)</span>
+                        </label>
+                        <input class="ep-input" id="password" name="password" type="password"
+                               minlength="8" autocomplete="new-password">
+                        <x-input-error :messages="$errors->get('password')" class="ep-error" />
+                    </div>
+                </div>
+
+                <x-slot:footer>
+                    <button type="submit" class="ep-btn ep-btn--primary">Enregistrer</button>
+                </x-slot:footer>
+            </x-ep.card>
+        </form>
+
+        <x-ep.card title="Mon compte">
+            <div class="ep-row ep-row--nowrap" style="gap:.75rem">
+                <img src="{{ $user->avatar_url }}" alt=""
+                     style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none">
+                <div style="min-width:0">
+                    <p style="font-size:.9375rem;font-weight:650;margin:0">{{ $user->name }}</p>
+                    <p class="ep-small" style="margin:0">
+                        {{ $user->isManager() ? 'Manager' : ($user->isCourier() ? 'Livreur' : 'Utilisateur') }}
+                        @if($user->zone) · {{ $user->zone }} @endif
+                    </p>
+                </div>
+            </div>
+
+            <p class="ep-hint" style="margin-top:1rem">
+                Votre portrait est attribué automatiquement à partir de la banque d'images
+                libres de droit du projet.
+            </p>
+        </x-ep.card>
     </div>
-@endif
-
-<x-admin.card title="Mon profil">
-    <form method="POST" action="{{ route('admin.profile.update') }}" class="space-y-4">
-        @csrf
-        @method('PUT')
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <x-admin.input name="name" value="{{ old('name',$user->name) }}" />
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <x-admin.input name="email" type="email" value="{{ old('email',$user->email) }}" />
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe (optionnel)</label>
-            <x-admin.input name="password" type="password" placeholder="Min 8 caractères" />
-            <p class="text-xs text-gray-500 mt-1">Laisse vide si tu ne veux pas changer le mot de passe.</p>
-        </div>
-
-        <div class="pt-4 border-t flex justify-end">
-            <x-admin.button type="submit" variant="primary" icon="fa-solid fa-floppy-disk">
-                Enregistrer
-            </x-admin.button>
-        </div>
-    </form>
-</x-admin.card>
 @endsection

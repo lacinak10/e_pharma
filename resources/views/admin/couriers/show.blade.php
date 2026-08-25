@@ -1,87 +1,115 @@
 @extends('layouts.admin')
 
-@section('title', 'E-PHARMA - Détail livreur')
-@section('page_title', 'Détail livreur')
+@section('title', $courier->name . ' — ePharma')
+@section('page_title', $courier->name)
+@section('page_subtitle', $courier->courierState() . ($courier->zone ? ' · ' . $courier->zone : ''))
 
 @section('content')
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
+    <div class="ep-grid ep-grid--stats">
+        <x-ep.stat label="Livrées" :value="$stats['delivered']" color="#0E5C43" />
+        <x-ep.stat label="En cours" :value="$stats['delivering'] + $stats['accepted']" color="#33557F" />
+        <x-ep.stat label="Assignées" :value="$stats['assigned']" color="#B87514" />
+        <x-ep.stat label="Refusées" :value="$stats['refused']" color="#A6382F" />
+        <x-ep.stat label="Taux d'acceptation" :value="$stats['acceptRate'] . ' %'" color="#0E5C43" />
     </div>
-@endif
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="ep-split">
+        <x-ep.card title="Courses récentes" flush>
+            @if($recentAssignments->isEmpty())
+                <x-ep.empty title="Aucune course." text="Ce livreur n'a pas encore reçu de course." />
+            @else
+                <div class="ep-table-wrap">
+                    <table class="ep-table ep-table--cards">
+                        <thead>
+                            <tr>
+                                <th scope="col">Référence</th>
+                                <th scope="col">Client</th>
+                                <th scope="col">Étape</th>
+                                <th scope="col">Attribuée</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($recentAssignments as $assignment)
+                                <tr>
+                                    <td data-label="Référence">
+                                        <span class="ep-cell-ref">{{ $assignment->order?->reference ?? '—' }}</span>
+                                    </td>
+                                    <td data-label="Client" class="ep-cell-name">
+                                        <span class="ep-small">{{ $assignment->order?->client?->short_name ?? '—' }}</span>
+                                    </td>
+                                    <td data-label="Étape">
+                                        @if($assignment->order)
+                                            <x-ep.badge :status="$assignment->order->status" />
+                                        @endif
+                                    </td>
+                                    <td data-label="Attribuée">
+                                        <span class="ep-small">
+                                            {{ $assignment->assigned_at?->locale('fr')->isoFormat('D MMM · HH:mm') ?? '—' }}
+                                        </span>
+                                    </td>
+                                    <td data-label="Action">
+                                        @if($assignment->order)
+                                            <a href="{{ route('manager.orders.show', $assignment->order) }}" class="ep-btn ep-btn--ghost ep-btn--sm">Détail</a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-ep.card>
 
-    <x-admin.card title="Informations livreur" class="lg:col-span-2">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <div class="text-xs text-gray-500">Nom</div>
-                <div class="text-xl font-bold text-gray-900">{{ $courier->name }}</div>
-                <div class="text-sm text-gray-500 mt-1">Email: <span class="font-semibold text-gray-700">{{ $courier->email }}</span></div>
-                <div class="text-sm text-gray-500 mt-1">Téléphone: <span class="font-semibold text-gray-700">{{ $courier->phone ?? '—' }}</span></div>
-            </div>
+        <div class="ep-stack">
+            <x-ep.card title="Le livreur">
+                <x-ep.courier-card :courier="$courier" :actions="false" />
 
-            <div class="text-right space-y-2">
-                <x-admin.badge text="Courier" variant="indigo" />
-                <x-admin.badge :text="$courier->is_active ? 'Actif' : 'Inactif'" :variant="$courier->is_active ? 'green' : 'red'" />
-                <x-admin.badge :text="'Taux acceptation: '.$stats['acceptRate'].'%'" variant="green" />
-            </div>
+                <div class="ep-stack" style="gap:.5rem;margin-top:1.25rem">
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-small">E-mail</span>
+                        <span class="ep-small">{{ $courier->email }}</span>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-small">Téléphone</span>
+                        <a href="tel:{{ preg_replace('/\s+/', '', $courier->phone ?? '') }}" class="ep-mono ep-small">
+                            {{ $courier->phone ?? '—' }}
+                        </a>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-small">Compte</span>
+                        <x-ep.badge :tone="$courier->is_active ? 'green' : 'neutral'"
+                                    :label="$courier->is_active ? 'Actif' : 'Désactivé'" />
+                    </div>
+                </div>
+
+                <x-slot:footer>
+                    <div class="ep-row">
+                        <a href="{{ route('manager.couriers.edit', $courier) }}" class="ep-btn ep-btn--ghost ep-btn--md">Modifier</a>
+                        <form method="POST" action="{{ route('manager.couriers.destroy', $courier) }}"
+                              onsubmit="return confirm('Retirer ce livreur ? Son historique est conservé.')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="ep-btn ep-btn--danger-soft ep-btn--md">Retirer</button>
+                        </form>
+                    </div>
+                </x-slot:footer>
+            </x-ep.card>
+
+            <x-ep.card title="Avis reçus">
+                @forelse($courier->reviews()->with('client:id,name')->latest()->limit(4)->get() as $review)
+                    <div style="padding:.625rem 0;border-bottom:1px solid var(--ep-rule-soft)">
+                        <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                            <span class="ep-stars" style="font-size:.8125rem">{{ $review->stars }}</span>
+                            <time class="ep-mono ep-small">{{ $review->created_at->locale('fr')->isoFormat('D MMM') }}</time>
+                        </div>
+                        @if($review->comment)
+                            <p class="ep-small" style="margin:.375rem 0 0">« {{ Str::limit($review->comment, 110) }} »</p>
+                        @endif
+                    </div>
+                @empty
+                    <p class="ep-small" style="margin:0">Aucun avis pour l'instant.</p>
+                @endforelse
+            </x-ep.card>
         </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-5">
-            <div class="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Assignées</div>
-                <div class="text-lg font-bold text-gray-900">{{ $stats['assigned'] }}</div>
-            </div>
-            <div class="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Acceptées</div>
-                <div class="text-lg font-bold text-gray-900">{{ $stats['accepted'] }}</div>
-            </div>
-            <div class="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">En livraison</div>
-                <div class="text-lg font-bold text-gray-900">{{ $stats['delivering'] }}</div>
-            </div>
-            <div class="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Livrées</div>
-                <div class="text-lg font-bold text-gray-900">{{ $stats['delivered'] }}</div>
-            </div>
-            <div class="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Refusées</div>
-                <div class="text-lg font-bold text-gray-900">{{ $stats['refused'] }}</div>
-            </div>
-            <div class="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div class="text-xs text-gray-500">Total</div>
-                <div class="text-lg font-bold text-gray-900">{{ $stats['total'] }}</div>
-            </div>
-        </div>
-
-        <div class="pt-4 border-t mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <a href="{{ route('manager.couriers.index') }}" class="text-sm text-gray-700 hover:text-gray-900">
-                ← Retour à la liste
-            </a>
-
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('manager.couriers.edit', $courier) }}"
-                   class="px-4 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 text-sm inline-flex items-center gap-2">
-                    <i class="fa-regular fa-pen-to-square"></i> Modifier
-                </a>
-
-
-                <form method="POST" action="{{ route('manager.couriers.destroy', $courier) }}"
-                      onsubmit="return confirm('Supprimer ce livreur ?');">
-                    @csrf @method('DELETE')
-                    <button class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm inline-flex items-center gap-2">
-                        <i class="fa-regular fa-trash-can"></i> Supprimer
-                    </button>
-                </form>
-            </div>
-        </div>
-    </x-admin.card>
-
-    <x-admin.card title="Résumé">
-        <div class="p-3 rounded-lg bg-gray-50 border border-gray-100 text-sm text-gray-700">
-            La suppression est en <b>soft delete</b> (recommandé) pour garder l’historique des livraisons.
-        </div>
-    </x-admin.card>
-</div>
+    </div>
 @endsection

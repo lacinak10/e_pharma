@@ -20,7 +20,9 @@ class CourierController extends Controller
         $status = $request->get('status');
 
         $query = User::query()
-            ->where('role', 'courier');
+            ->where('role', 'courier')
+            ->withAvg('reviews as reviews_avg_rating', 'rating')
+            ->withCount('reviews');
 
         if ($q !== '') {
             $query->where(function ($qq) use ($q) {
@@ -70,7 +72,9 @@ class CourierController extends Controller
 
     public function create()
     {
-        return view('admin.couriers.create');
+        return view('admin.couriers.form', [
+            'courier' => new User(['role' => User::ROLE_COURIER, 'is_active' => true]),
+        ]);
     }
 
     public function store(Request $request)
@@ -79,6 +83,9 @@ class CourierController extends Controller
             'name' => ['required','string','max:255'],
             'email' => ['required','email','max:255','unique:users,email'],
             'phone' => ['nullable','string','max:30'],
+            'zone' => ['nullable','string','max:80'],
+            'latitude' => ['nullable','numeric','between:-90,90'],
+            'longitude' => ['nullable','numeric','between:-180,180'],
             'password' => ['required','string','min:8','confirmed'],
             'is_active' => ['nullable'],
         ]);
@@ -87,6 +94,9 @@ class CourierController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
+            'zone' => $data['zone'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'password' => Hash::make($data['password']),
             'role' => 'courier',
             'is_active' => $request->boolean('is_active', true),
@@ -126,6 +136,8 @@ class CourierController extends Controller
 
         $stats = compact('total','assigned','accepted','delivering','delivered','refused','acceptRate');
 
+        $courier->loadAvg('reviews as reviews_avg_rating', 'rating')->loadCount('reviews');
+
         $recentAssignments = DeliveryAssignment::with('order.user:id,name')
             ->where('courier_id', $courier->id)
             ->latest()
@@ -137,54 +149,63 @@ class CourierController extends Controller
 
     public function edit(User $courier)
     {
-        return view('admin.couriers.edit', compact('courier'));
+        abort_unless($courier->role === User::ROLE_COURIER, 404);
+
+        return view('admin.couriers.form', compact('courier'));
     }
 
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $courier)
     {
-        abort_unless($user->role === 'courier', 404);
+        abort_unless($courier->role === User::ROLE_COURIER, 404);
 
         $data = $request->validate([
             'name' => ['required','string','max:255'],
-            'email' => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+            'email' => ['required','email','max:255', Rule::unique('users','email')->ignore($courier->id)],
             'phone' => ['nullable','string','max:30'],
+            'zone' => ['nullable','string','max:80'],
+            'latitude' => ['nullable','numeric','between:-90,90'],
+            'longitude' => ['nullable','numeric','between:-180,180'],
             'password' => ['nullable','string','min:8','confirmed'],
             'is_active' => ['nullable'],
         ]);
 
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-        $user->phone = $data['phone'] ?? null;
-        $user->is_active = $request->boolean('is_active', $user->is_active);
+        $courier->name = $data['name'];
+        $courier->email = $data['email'];
+        $courier->phone = $data['phone'] ?? null;
+        $courier->zone = $data['zone'] ?? null;
+        $courier->latitude = $data['latitude'] ?? null;
+        $courier->longitude = $data['longitude'] ?? null;
+        $courier->is_active = $request->boolean('is_active', $courier->is_active);
 
         if (!empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
+            $courier->password = Hash::make($data['password']);
         }
 
-        $user->save();
+        $courier->save();
 
-        return redirect()->route('manager.couriers.show', $user)
+        return redirect()->route('manager.couriers.show', $courier)
             ->with('success', 'Livreur mis à jour.');
     }
 
-    public function toggle(User $user)
+    public function toggle(User $courier)
     {
-        abort_unless($user->role === 'courier', 404);
+        abort_unless($courier->role === User::ROLE_COURIER, 404);
 
-        $user->is_active = !$user->is_active;
-        $user->save();
+        $courier->is_active = ! $courier->is_active;
+        $courier->save();
 
-        return back()->with('success', $user->is_active ? 'Livreur activé.' : 'Livreur désactivé.');
+        return back()->with('success', $courier->is_active ? 'Livreur activé.' : 'Livreur désactivé.');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $courier)
     {
-        abort_unless($user->role === 'courier', 404);
+        abort_unless($courier->role === User::ROLE_COURIER, 404);
 
-        Log::info('Courier deleted', ['manager_id' => auth()->id(), 'courier_id' => $user->id, 'email' => $user->email]);
+        Log::info('Courier deleted', ['manager_id' => auth()->id(), 'courier_id' => $courier->id, 'email' => $courier->email]);
 
-        // Soft delete (recommandé) : ne casse pas l'historique
-        $user->delete();
+        // Suppression douce : le livreur disparaît des listes et ne peut plus se
+        // connecter, mais les courses déjà effectuées gardent son nom.
+        $courier->delete();
 
         return redirect()->route('manager.couriers.index')
             ->with('success', 'Livreur supprimé.');

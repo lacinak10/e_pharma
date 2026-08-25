@@ -1,57 +1,66 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Clients')
-@section('page_title','Clients')
+@section('title', 'Clients — ePharma')
+@section('page_title', 'Clients')
+@section('page_subtitle', $customers->total() . ' client(s) inscrits')
 
 @section('content')
-@php $q = $q ?? request('q'); @endphp
+    <x-ep.card flush>
+        <header class="ep-card__head">
+            <h2 class="ep-card__title">Tous les clients</h2>
+            <form method="GET" class="ep-row ep-spacer" style="gap:.375rem">
+                <label class="ep-sr-only" for="q">Nom</label>
+                <input class="ep-input" id="q" name="q" value="{{ $q }}" placeholder="Nom du client…"
+                       style="width:180px;padding:.5rem .75rem;font-size:.8125rem">
+                <button type="submit" class="ep-btn ep-btn--ghost ep-btn--sm">Filtrer</button>
+            </form>
+        </header>
 
-<x-admin.card title="Clients" class="p-0">
-    <x-slot:actions>
-        <form method="GET" class="flex gap-2 items-center">
-            <x-admin.input name="q" value="{{ $q }}" placeholder="Rechercher un client..." />
-            <x-admin.button type="submit" variant="outline" icon="fa-solid fa-magnifying-glass">Filtrer</x-admin.button>
+        @if($customers->isEmpty())
+            <x-ep.empty title="Aucun client." text="Les comptes clients apparaissent ici dès la première inscription." />
+        @else
+            <div class="ep-table-wrap">
+                <table class="ep-table ep-table--cards">
+                    <thead>
+                        <tr>
+                            <th scope="col" colspan="2">Client</th>
+                            <th scope="col">Contact</th>
+                            <th scope="col">Quartier</th>
+                            <th scope="col">Commandes</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($customers as $customer)
+                            <tr>
+                                <td data-label="" style="width:52px">
+                                    <img src="{{ $customer->avatar_url }}" alt=""
+                                         style="width:36px;height:36px;border-radius:50%;object-fit:cover">
+                                </td>
+                                <td data-label="Client" class="ep-cell-name">
+                                    <p style="font-size:.84375rem;font-weight:650;margin:0">{{ $customer->name }}</p>
+                                    <p class="ep-small" style="margin:0">
+                                        Inscrit {{ $customer->created_at->locale('fr')->isoFormat('D MMM YYYY') }}
+                                    </p>
+                                </td>
+                                <td data-label="Contact">
+                                    <p class="ep-small" style="margin:0">{{ $customer->email }}</p>
+                                    @if($customer->phone)
+                                        <a href="tel:{{ preg_replace('/\s+/', '', $customer->phone) }}" class="ep-mono ep-small">{{ $customer->phone }}</a>
+                                    @endif
+                                </td>
+                                <td data-label="Quartier"><span class="ep-small">{{ $customer->zone ?? '—' }}</span></td>
+                                <td data-label="Commandes"><span class="ep-cell-num">{{ $customer->orders_count }}</span></td>
+                                <td data-label="Action">
+                                    <a href="{{ route('manager.customers.show', $customer) }}" class="ep-btn ep-btn--ghost ep-btn--sm">Fiche</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </x-ep.card>
 
-            @if($q)
-                <a href="{{ route('manager.customers.index') }}"
-                   class="px-3 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50 text-sm">
-                    Réinitialiser
-                </a>
-            @endif
-        </form>
-    </x-slot:actions>
-
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nb commandes</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-            @forelse($customers as $c)
-                <tr>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $c->name }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $c->email }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $c->orders_count ?? 0 }}</td>
-                    <td class="px-6 py-4 text-sm">
-                        <a href="{{ route('manager.customers.show',$c) }}" class="text-primary hover:text-secondary" title="Voir">
-                            <i class="fa-regular fa-eye"></i>
-                        </a>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="4" class="px-6 py-10">
-                    <x-admin.empty-state title="Aucun client" description="Aucun client trouvé." icon="fa-solid fa-users" />
-                </td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <x-admin.pagination :paginator="$customers" />
-</x-admin.card>
+    @if($customers->hasPages()) {{ $customers->links() }} @endif
 @endsection

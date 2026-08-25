@@ -1,93 +1,81 @@
 @extends('layouts.admin')
 
-@section('title', 'E-PHARMA - Créer un utilisateur')
+@section('title', 'Créer un utilisateur — ePharma')
 @section('page_title', 'Créer un utilisateur')
+@section('page_subtitle', 'Manager, livreur ou client')
 
 @section('content')
-
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm flex items-center gap-2">
-        <i class="fa-solid fa-circle-check"></i>
-        {{ session('success') }}
-    </div>
-@endif
-
-@if($errors->any())
-    <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
-        <div class="font-semibold mb-1">Erreurs :</div>
-        <ul class="list-disc pl-5">
-            @foreach($errors->all() as $err)
-                <li>{{ $err }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-<x-admin.card title="Informations de l'utilisateur">
-    <form method="POST" action="{{ route('manager.users.store') }}" class="space-y-4">
+    <form method="POST" action="{{ route('manager.users.store') }}" style="max-width:760px">
         @csrf
 
-        {{-- Nom & Prénom --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nom <span class="text-red-500">*</span></label>
-                <x-admin.input name="name" value="{{ old('name') }}" placeholder="Nom de famille" />
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                <x-admin.input name="prenom" value="{{ old('prenom') }}" placeholder="Prénom" />
-            </div>
-        </div>
+        <x-ep.card>
+            <fieldset style="border:0;padding:0;margin:0 0 1.25rem">
+                <legend class="ep-label" style="margin-bottom:.5rem">Rôle</legend>
+                <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:.5rem">
+                    @foreach([
+                        'client'  => ['Client', 'Commande et suit ses livraisons'],
+                        'courier' => ['Livreur', 'Prend en charge les courses'],
+                        'manager' => ['Manager', 'Valide et vérifie la disponibilité'],
+                    ] as $value => [$label, $help])
+                        <label class="ep-choice">
+                            <input type="radio" name="role" value="{{ $value }}" @checked(old('role', 'client') === $value)>
+                            <span>
+                                <strong>{{ $label }}</strong><br>
+                                <span class="ep-small">{{ $help }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-input-error :messages="$errors->get('role')" class="ep-error" />
+            </fieldset>
 
-        {{-- Email & Téléphone --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
-                <x-admin.input name="email" type="email" value="{{ old('email') }}" placeholder="exemple@email.com" />
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                <x-admin.input name="phone" value="{{ old('phone') }}" placeholder="+225 XX XX XX XX XX" />
-            </div>
-        </div>
+            <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:1rem">
+                <div class="ep-field">
+                    <label class="ep-label" for="name">Nom</label>
+                    <input class="ep-input" id="name" name="name" required maxlength="255" value="{{ old('name') }}">
+                    <x-input-error :messages="$errors->get('name')" class="ep-error" />
+                </div>
 
-        {{-- Rôle --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Rôle <span class="text-red-500">*</span></label>
-            <select name="role"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                <option value="">-- Choisir un rôle --</option>
-                <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Manager</option>
-                <option value="courier" {{ old('role') === 'courier' ? 'selected' : '' }}>Livreur</option>
-                <option value="client"  {{ old('role') === 'client'  ? 'selected' : '' }}>Client</option>
-            </select>
-        </div>
+                <div class="ep-field">
+                    <label class="ep-label" for="prenom">Prénom <span class="ep-hint">(facultatif)</span></label>
+                    <input class="ep-input" id="prenom" name="prenom" maxlength="255" value="{{ old('prenom') }}">
+                </div>
 
-        {{-- Mot de passe --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe <span class="text-red-500">*</span></label>
-                <x-admin.input name="password" type="password" placeholder="Minimum 8 caractères" />
+                <div class="ep-field">
+                    <label class="ep-label" for="email">E-mail</label>
+                    <input class="ep-input" id="email" name="email" type="email" required maxlength="255" value="{{ old('email') }}">
+                    <x-input-error :messages="$errors->get('email')" class="ep-error" />
+                </div>
+
+                <div class="ep-field">
+                    <label class="ep-label" for="phone">Téléphone</label>
+                    <input class="ep-input ep-mono" id="phone" name="phone" maxlength="30" value="{{ old('phone') }}"
+                           placeholder="+225 07 00 00 00 00">
+                </div>
+
+                <div class="ep-field">
+                    <label class="ep-label" for="password">Mot de passe</label>
+                    <input class="ep-input" id="password" name="password" type="password" required minlength="8"
+                           autocomplete="new-password">
+                    <p class="ep-hint">8 caractères minimum.</p>
+                    <x-input-error :messages="$errors->get('password')" class="ep-error" />
+                </div>
+
+                <div class="ep-field">
+                    <label class="ep-label" for="password_confirmation">Confirmation</label>
+                    <input class="ep-input" id="password_confirmation" name="password_confirmation" type="password"
+                           required minlength="8" autocomplete="new-password">
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe <span class="text-red-500">*</span></label>
-                <x-admin.input name="password_confirmation" type="password" placeholder="Répéter le mot de passe" />
-            </div>
-        </div>
 
-        {{-- Statut --}}
-        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" name="is_active" value="1" {{ old('is_active', 1) ? 'checked' : '' }}
-                class="rounded border-gray-300 text-primary focus:ring-primary">
-            Compte actif
-        </label>
+            <label class="ep-choice" style="margin-top:1.25rem">
+                <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))>
+                Compte actif dès la création
+            </label>
 
-        <div class="pt-4 border-t flex justify-end gap-2">
-            <x-admin.button type="submit" variant="primary" icon="fa-solid fa-user-plus">
-                Créer l'utilisateur
-            </x-admin.button>
-        </div>
+            <x-slot:footer>
+                <button type="submit" class="ep-btn ep-btn--primary">Créer l'utilisateur</button>
+            </x-slot:footer>
+        </x-ep.card>
     </form>
-</x-admin.card>
-
 @endsection

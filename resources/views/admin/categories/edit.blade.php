@@ -1,34 +1,32 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Modifier catégorie')
-@section('page_title','Modifier catégorie')
+@section('title', 'Modifier ' . $category->name . ' — ePharma')
+@section('page_title', 'Modifier ' . $category->name)
 
 @section('content')
-<x-admin.card title="Modifier la catégorie">
-    <form method="POST" action="{{ route('manager.categories.update',$category) }}" class="space-y-4">
+    <form method="POST" action="{{ route('manager.categories.update', $category) }}" style="max-width:520px">
         @csrf @method('PUT')
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <x-admin.input name="name" value="{{ old('name',$category->name) }}" />
+        <x-ep.card>
+            <div class="ep-field">
+                <label class="ep-label" for="name">Nom</label>
+                <input class="ep-input" id="name" name="name" required maxlength="255"
+                       value="{{ old('name', $category->name) }}">
+                <p class="ep-hint">Identifiant actuel : <span class="ep-mono">{{ $category->slug }}</span></p>
+                <x-input-error :messages="$errors->get('name')" class="ep-error" />
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Slug (auto)</label>
-                <x-admin.input value="{{ $category->slug }}" disabled />
-            </div>
-        </div>
 
-        <div class="flex items-center gap-2">
-            <input type="checkbox" name="is_active" value="1" {{ $category->is_active ? 'checked' : '' }}
-                   class="h-4 w-4 border-gray-300 rounded">
-            <span class="text-sm text-gray-700">Active</span>
-        </div>
+            <label class="ep-choice" style="margin-top:.875rem">
+                <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $category->is_active))>
+                Visible dans le catalogue client
+            </label>
 
-        <div class="pt-4 border-t flex justify-end gap-2">
-            <a href="{{ route('manager.categories.index') }}" class="px-4 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-50">Retour</a>
-            <x-admin.button type="submit" variant="primary">Mettre à jour</x-admin.button>
-        </div>
+            <x-slot:footer>
+                <div class="ep-row">
+                    <button type="submit" class="ep-btn ep-btn--primary">Enregistrer</button>
+                    <a href="{{ route('manager.categories.index') }}" class="ep-btn ep-btn--ghost">Annuler</a>
+                </div>
+            </x-slot:footer>
+        </x-ep.card>
     </form>
-</x-admin.card>
 @endsection
