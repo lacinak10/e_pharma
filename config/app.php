@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Version des fichiers statiques
+    |--------------------------------------------------------------------------
+    |
+    | Suffixe « ?v= » ajouté au CSS et au JS de public/assets. À incrémenter
+    | après chaque modification de ces fichiers, sinon les navigateurs
+    | continuent de servir la version qu'ils ont en cache.
+    |
+    */
+
+    'asset_version' => env('ASSET_VERSION', '10'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

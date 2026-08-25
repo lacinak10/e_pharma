@@ -1,0 +1,929 @@
+/* =====================================================================
+   ePharma — système de design v2
+   Fondations, composants et règles responsive partagés par les quatre
+   interfaces : client web, client mobile, manager, livreur.
+   ===================================================================== */
+
+/* ---------- 01. Fondations ------------------------------------------ */
+
+:root {
+    /* Couleurs de marque — une couleur ne fait jamais deux métiers */
+    --ep-green: #0E5C43;        /* marque, actions, confirmé */
+    --ep-green-dark: #0A4634;
+    --ep-green-soft: #6FBF9B;
+    --ep-amber: #B87514;        /* attente, compte à rebours */
+    --ep-amber-deep: #7A4E0B;
+    --ep-red: #A6382F;          /* indisponible, refus */
+    --ep-red-deep: #8E2F27;
+    --ep-blue: #33557F;         /* livreur en mouvement */
+    --ep-ink: #12211B;          /* texte, back-office */
+
+    /* Surfaces */
+    --ep-bg: #FAF8F4;
+    --ep-bg-warm: #F4F2EC;
+    --ep-surface: #FFFFFF;
+    --ep-green-8: #E7F1EC;
+    --ep-amber-10: #FBF0DC;
+    --ep-red-8: #F9EAE7;
+    --ep-blue-8: #E9EFF6;
+    --ep-neutral-8: #EFEDE6;
+    --ep-rule: #E2DED4;
+    --ep-rule-soft: #EFEDE6;
+    --ep-border-input: #D6D2C6;
+
+    /* Texte */
+    --ep-text: #12211B;
+    --ep-text-2: #3C4C45;
+    --ep-text-3: #4A5A53;
+    --ep-muted: #6B7A73;
+    --ep-muted-2: #8A968F;
+    --ep-muted-3: #9AA7A0;
+    --ep-disabled: #A8B1AB;
+
+    /* Back-office sombre */
+    --ep-dark: #0F1A16;
+    --ep-dark-2: #17251F;
+    --ep-dark-3: #1E2C26;
+    --ep-dark-text: #A9B8B1;
+    --ep-dark-muted: #6C7F77;
+
+    /* Typographie */
+    --ep-font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+    --ep-font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+    --ep-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+    /* Rythme */
+    --ep-radius-sm: 6px;
+    --ep-radius: 9px;
+    --ep-radius-lg: 12px;
+    --ep-radius-xl: 16px;
+    --ep-shadow: 0 12px 32px rgba(18, 33, 27, .10);
+    --ep-shadow-lg: 0 18px 34px rgba(18, 33, 27, .09);
+
+    /* Gabarits */
+    --ep-shell: 1360px;
+    --ep-prose: 1180px;
+    --ep-sidebar: 236px;
+}
+
+@keyframes epPulse {
+    0%, 100% { opacity: 1 }
+    50% { opacity: .35 }
+}
+
+.ep-root {
+    margin: 0;
+    overflow-x: clip;   /* le contenu large scrolle dans son propre conteneur, jamais la page */
+    max-width: 100%;
+    background: var(--ep-bg);
+    color: var(--ep-text);
+    font-family: var(--ep-font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+.ep-root *,
+.ep-root *::before,
+.ep-root *::after { box-sizing: border-box; }
+
+/* L'attribut `hidden` doit l'emporter sur le `display` d'un composant :
+   sans cela, une zone masquée en HTML reste visible dès qu'une classe lui
+   donne un display (l'aperçu d'ordonnance montrait une image cassée). */
+.ep-root [hidden] { display: none !important; }
+
+.ep-root a { color: var(--ep-green); text-decoration: none; }
+.ep-root a:hover { color: var(--ep-green-dark); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- 02. Typographie ----------------------------------------- */
+
+.ep-display { font-family: var(--ep-font-display); font-weight: 700; letter-spacing: -.03em; line-height: .98; }
+.ep-h1 { font-family: var(--ep-font-display); font-size: clamp(2rem, 1.2rem + 3.6vw, 4rem); font-weight: 700; letter-spacing: -.035em; line-height: .98; margin: 0; }
+.ep-h2 { font-family: var(--ep-font-display); font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.5rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; margin: 0; }
+.ep-h3 { font-size: clamp(1.25rem, 1.05rem + .9vw, 1.75rem); font-weight: 650; letter-spacing: -.02em; margin: 0; }
+.ep-h4 { font-size: 1rem; font-weight: 650; margin: 0; }
+
+.ep-lead { font-size: clamp(1rem, .95rem + .4vw, 1.15rem); line-height: 1.6; color: var(--ep-text-3); text-wrap: pretty; }
+.ep-body { font-size: .9375rem; line-height: 1.6; color: var(--ep-text-2); }
+.ep-small { font-size: .8125rem; line-height: 1.5; color: var(--ep-muted); }
+
+.ep-mono { font-family: var(--ep-font-mono); font-variant-numeric: tabular-nums; }
+
+/* Étiquette : « ORDONNANCE OBLIGATOIRE » */
+.ep-eyebrow {
+    font-family: var(--ep-font-mono);
+    font-size: .6875rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ep-muted-3);
+}
+.ep-eyebrow--green { color: var(--ep-green); }
+.ep-eyebrow--amber { color: #8A5A10; }
+
+/* ---------- 03. Gabarits -------------------------------------------- */
+
+.ep-shell { max-width: var(--ep-shell); margin: 0 auto; padding-inline: clamp(1rem, .4rem + 2vw, 2rem); }
+.ep-prose-shell { max-width: var(--ep-prose); margin: 0 auto; padding-inline: clamp(1rem, .4rem + 2vw, 2.5rem); }
+
+.ep-section { padding-block: clamp(2.5rem, 1.5rem + 4vw, 5rem); }
+.ep-section--tight { padding-block: clamp(1.75rem, 1rem + 2.5vw, 3rem); }
+
+/* Grille fluide : les cartes se réorganisent seules du mobile au desktop */
+.ep-grid { display: grid; gap: 1rem; }
+.ep-grid--cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
+.ep-grid--wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+.ep-grid--2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: clamp(1.5rem, 1rem + 2vw, 3.5rem); }
+.ep-grid--3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1.5rem; }
+.ep-grid--stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: .875rem; }
+
+/* Colonne principale + rail latéral, empilés sous 1100px */
+.ep-split { display: grid; gap: 1.25rem; align-items: start; grid-template-columns: 1fr; }
+@media (min-width: 1100px) {
+    .ep-split { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1.25rem; }
+}
+
+.ep-stack { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+.ep-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.ep-row--nowrap { flex-wrap: nowrap; }
+.ep-spacer { margin-left: auto; }
+
+/* ---------- 04. Carte ----------------------------------------------- */
+
+.ep-card {
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-rule);
+    border-radius: var(--ep-radius-lg);
+    overflow: hidden;
+    min-width: 0;
+}
+.ep-card__head {
+    padding: .875rem 1.125rem;
+    border-bottom: 1px solid var(--ep-rule-soft);
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+.ep-card__title { font-size: .9375rem; font-weight: 650; }
+.ep-card__body { padding: 1rem 1.125rem; }
+.ep-card__foot { padding: 1rem 1.125rem; background: var(--ep-bg-warm); }
+.ep-card--dark { background: var(--ep-dark); border-color: transparent; color: #B9C6BF; }
+.ep-card--flush { padding: 0; }
+
+/* ---------- 05. Badge de statut ------------------------------------- */
+
+.ep-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4375rem;
+    padding: .3125rem .625rem;
+    border-radius: var(--ep-radius-sm);
+    font-size: .75rem;
+    font-weight: 650;
+    line-height: 1.2;
+    width: fit-content;
+    white-space: nowrap;
+}
+.ep-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+}
+.ep-badge--green   { background: var(--ep-green-8);  color: var(--ep-green); }
+.ep-badge--amber   { background: var(--ep-amber-10); color: var(--ep-amber); }
+.ep-badge--red     { background: var(--ep-red-8);    color: var(--ep-red); }
+.ep-badge--blue    { background: var(--ep-blue-8);   color: var(--ep-blue); }
+.ep-badge--neutral { background: var(--ep-neutral-8); color: #5B6B63; }
+.ep-badge--rx      { background: var(--ep-red-8); color: var(--ep-red); font-weight: 700; font-size: .65625rem; }
+.ep-badge--rx::before { display: none; }
+
+/* ---------- 06. Boutons --------------------------------------------- */
+
+.ep-btn {
+    font-family: var(--ep-font-sans);
+    font-size: .9375rem;
+    font-weight: 650;
+    line-height: 1.2;
+    padding: .8125rem 1.25rem;
+    border-radius: var(--ep-radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    text-align: center;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.ep-btn:hover { text-decoration: none; }
+.ep-btn:focus-visible { outline: 2px solid var(--ep-green); outline-offset: 2px; }
+
+/*
+   Les variantes sont doublement qualifiées (.ep-root .ep-btn--x) pour battre
+   `.ep-root a`, sinon un lien stylé en bouton hérite du vert des liens et
+   son libellé disparaît sur fond vert.
+*/
+.ep-root .ep-btn--primary { background: var(--ep-green); color: #fff; }
+.ep-root .ep-btn--primary:hover { background: var(--ep-green-dark); color: #fff; }
+
+.ep-root .ep-btn--ghost { background: var(--ep-surface); color: var(--ep-ink); border-color: var(--ep-border-input); }
+.ep-root .ep-btn--ghost:hover { border-color: var(--ep-ink); color: var(--ep-ink); }
+
+.ep-root .ep-btn--danger { background: var(--ep-red); color: #fff; }
+.ep-root .ep-btn--danger:hover { background: var(--ep-red-deep); color: #fff; }
+
+.ep-root .ep-btn--danger-soft { background: var(--ep-surface); color: var(--ep-red); border-color: #E0BDB8; }
+.ep-root .ep-btn--danger-soft:hover { background: var(--ep-red-8); color: var(--ep-red); }
+
+.ep-root .ep-btn--soft { background: var(--ep-green-8); color: var(--ep-green-dark); }
+.ep-root .ep-btn--soft:hover { background: #DDEEE6; color: var(--ep-green-dark); }
+
+.ep-root .ep-btn[disabled],
+.ep-root .ep-btn--disabled {
+    background: var(--ep-bg-warm);
+    border-color: var(--ep-rule);
+    color: var(--ep-disabled);
+    cursor: not-allowed;
+}
+.ep-btn--sm { font-size: .75rem; padding: .4375rem .6875rem; border-radius: 7px; }
+.ep-btn--md { font-size: .8125rem; padding: .5625rem .875rem; border-radius: 8px; }
+.ep-btn--block { width: 100%; }
+
+/* ---------- 07. Formulaires ----------------------------------------- */
+
+.ep-field { display: flex; flex-direction: column; gap: .375rem; min-width: 0; }
+.ep-label { font-size: .8125rem; font-weight: 650; color: var(--ep-text-3); }
+.ep-input,
+.ep-select,
+.ep-textarea {
+    font-family: var(--ep-font-sans);
+    font-size: .9375rem;
+    color: var(--ep-text);
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-border-input);
+    border-radius: var(--ep-radius);
+    padding: .75rem .875rem;
+    width: 100%;
+    outline: none;
+}
+.ep-input:focus, .ep-select:focus, .ep-textarea:focus { border-color: var(--ep-green); box-shadow: 0 0 0 3px rgba(14, 92, 67, .12); }
+.ep-textarea { min-height: 96px; resize: vertical; }
+.ep-error { font-size: .75rem; color: var(--ep-red); }
+.ep-hint { font-size: .75rem; color: var(--ep-muted); }
+
+/* Barre de recherche du client */
+.ep-search {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid var(--ep-green);
+    border-radius: 10px;
+    background: var(--ep-surface);
+    overflow: hidden;
+}
+.ep-search input {
+    font-family: var(--ep-font-sans);
+    flex: 1; min-width: 0;
+    border: none; outline: none;
+    padding: .875rem 1rem;
+    font-size: .9375rem;
+    background: transparent;
+    color: var(--ep-text);
+}
+.ep-search button {
+    font-family: var(--ep-font-sans);
+    font-size: .90625rem; font-weight: 650;
+    background: var(--ep-green); color: #fff;
+    border: none; padding: .875rem 1.5rem; cursor: pointer;
+    white-space: nowrap;
+}
+.ep-search button:hover { background: var(--ep-green-dark); }
+@media (max-width: 480px) {
+    .ep-search button { padding-inline: 1rem; }
+}
+
+/* Choix radio en carte (périmètre de l'ordonnance) */
+.ep-choice {
+    display: flex; align-items: flex-start; gap: .5625rem;
+    padding: .75rem .8125rem;
+    border-radius: 8px;
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-rule);
+    font-size: .84375rem;
+    color: var(--ep-muted);
+    cursor: pointer;
+}
+.ep-choice input { margin: .1875rem 0 0; accent-color: var(--ep-green); flex: none; }
+.ep-choice:has(input:checked) {
+    background: var(--ep-green-8);
+    border: 1.5px solid var(--ep-green);
+    color: var(--ep-green-dark);
+    font-weight: 650;
+}
+
+/* ---------- 08. Composant signature : le chrono --------------------- */
+
+.ep-chrono {
+    background: var(--ep-amber-10);
+    border: 1px solid #EBD9B4;
+    border-radius: var(--ep-radius-xl);
+    padding: clamp(1.25rem, 1rem + 2vw, 2.25rem) clamp(1.25rem, 1rem + 1.5vw, 2rem);
+}
+.ep-chrono__label {
+    display: flex; align-items: center; gap: .625rem;
+    font-family: var(--ep-font-mono);
+    font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+    color: #8A5A10;
+}
+.ep-chrono__label::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ep-amber); animation: epPulse 1.6s ease-in-out infinite; flex: none;
+}
+.ep-chrono__value {
+    font-family: var(--ep-font-display);
+    font-size: clamp(3.25rem, 2rem + 6vw, 6rem);
+    line-height: .85; font-weight: 700; letter-spacing: -.05em;
+    color: var(--ep-amber-deep);
+    font-variant-numeric: tabular-nums;
+}
+.ep-chrono__body { display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap; margin: 1.375rem 0 .5rem; }
+.ep-chrono__caption { font-size: .875rem; color: #8A5A10; padding-bottom: .75rem; max-width: 24ch; line-height: 1.4; }
+.ep-chrono__track { height: 6px; border-radius: 99px; background: #EBD9B4; overflow: hidden; margin-top: 1.25rem; }
+.ep-chrono__fill { height: 100%; background: var(--ep-amber); border-radius: 99px; transition: width 1s linear; }
+
+/* Variante manager : passe en rouge sous 1:00 */
+.ep-chrono--urgent .ep-chrono__value { color: var(--ep-red); }
+.ep-chrono--urgent .ep-chrono__fill { background: var(--ep-red); }
+
+/* Chrono compact en ligne (en-tête de fiche) */
+.ep-chrono-inline {
+    display: inline-flex; align-items: center; gap: .625rem;
+    padding: .3125rem .6875rem; border-radius: 7px;
+    background: var(--ep-amber-10);
+}
+.ep-chrono-inline__value { font-family: var(--ep-font-mono); font-size: 1.0625rem; font-weight: 600; color: var(--ep-amber); }
+.ep-chrono-inline--urgent { background: var(--ep-red-8); }
+.ep-chrono-inline--urgent .ep-chrono-inline__value { color: var(--ep-red); }
+
+/* ---------- 09. Timeline de livraison (5 étapes) -------------------- */
+
+.ep-timeline { display: flex; flex-direction: column; }
+.ep-timeline__step { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: .875rem; align-items: start; }
+.ep-timeline__rail { display: flex; flex-direction: column; align-items: center; height: 100%; }
+.ep-timeline__dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 3px; flex: none; border: 2px solid; }
+.ep-timeline__line { width: 2px; flex: 1; min-height: 26px; }
+.ep-timeline__content { padding-bottom: 1.125rem; min-width: 0; }
+.ep-timeline__label { font-size: .90625rem; line-height: 1.35; }
+.ep-timeline__sub { font-size: .78125rem; color: var(--ep-muted-2); margin-top: 2px; }
+.ep-timeline__time { font-family: var(--ep-font-mono); font-size: .75rem; color: var(--ep-muted-2); padding-top: 2px; white-space: nowrap; }
+
+.ep-timeline__step--done .ep-timeline__dot { background: var(--ep-green); border-color: var(--ep-green); }
+.ep-timeline__step--done .ep-timeline__line { background: var(--ep-green); }
+.ep-timeline__step--done .ep-timeline__label { color: var(--ep-ink); font-weight: 650; }
+
+.ep-timeline__step--current .ep-timeline__dot { background: var(--ep-blue); border-color: #BBCADD; }
+.ep-timeline__step--current .ep-timeline__line { background: var(--ep-rule); }
+.ep-timeline__step--current .ep-timeline__label { color: var(--ep-blue); font-weight: 700; }
+
+.ep-timeline__step--todo .ep-timeline__dot { background: #fff; border-color: #DAD6CA; }
+.ep-timeline__step--todo .ep-timeline__line { background: transparent; }
+.ep-timeline__step--todo .ep-timeline__label { color: var(--ep-disabled); font-weight: 400; }
+
+.ep-timeline__step:last-child .ep-timeline__line { display: none; }
+.ep-timeline__step:last-child .ep-timeline__content { padding-bottom: 0; }
+
+/* ---------- 10. Carte médicament ------------------------------------ */
+
+.ep-product {
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-rule);
+    border-radius: var(--ep-radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    transition: border-color .15s ease;
+}
+.ep-product:hover { border-color: var(--ep-green); }
+.ep-product__media {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border-bottom: 1px solid var(--ep-rule-soft);
+    padding: 1.25rem;
+}
+.ep-product__media img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--ep-radius-sm); background: #F6F4EE; }
+.ep-product__rx { position: absolute; top: .625rem; left: .625rem; }
+.ep-product__body { padding: .875rem .875rem 1rem; display: flex; flex-direction: column; flex: 1; gap: .3125rem; }
+.ep-product__name { font-size: .90625rem; font-weight: 650; line-height: 1.3; color: var(--ep-ink); }
+.ep-product__name:hover { color: var(--ep-green-dark); }
+.ep-product__ind { font-size: .78125rem; color: var(--ep-muted); line-height: 1.35; }
+.ep-product__pack { font-family: var(--ep-font-mono); font-size: .75rem; color: var(--ep-text-3); }
+.ep-product__avail { display: flex; align-items: center; gap: .375rem; margin-top: .625rem; font-size: .75rem; font-weight: 600; }
+.ep-product__avail::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.ep-product__foot { margin-top: auto; padding-top: .75rem; display: flex; align-items: flex-end; justify-content: space-between; gap: .5rem; }
+.ep-product__price { font-family: var(--ep-font-mono); font-size: 1.125rem; font-weight: 600; }
+
+/* ---------- 11. Carte livreur & bandeau ----------------------------- */
+
+.ep-courier { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.ep-courier__avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; background: var(--ep-rule); }
+.ep-courier__name { font-size: .96875rem; font-weight: 650; }
+.ep-courier__meta { display: flex; align-items: center; gap: .5rem; margin-top: 3px; flex-wrap: wrap; }
+.ep-courier__eta { font-family: var(--ep-font-mono); font-size: .78125rem; color: var(--ep-blue); margin-top: .375rem; }
+.ep-courier__actions { display: flex; gap: .5rem; flex: none; }
+@media (max-width: 560px) {
+    .ep-courier__actions { width: 100%; }
+    .ep-courier__actions > * { flex: 1; }
+}
+
+.ep-stars { color: var(--ep-amber); letter-spacing: 1px; font-size: .8125rem; line-height: 1; }
+
+/* Bandeau persistant « commande en cours » */
+.ep-banner {
+    background: var(--ep-ink);
+    border-radius: var(--ep-radius-lg);
+    padding: .875rem 1.125rem;
+    display: flex; align-items: center; gap: .875rem;
+    color: #F2F0E9;
+    flex-wrap: wrap;
+}
+.ep-banner::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ep-green-soft); animation: epPulse 1.6s ease-in-out infinite; flex: none;
+}
+.ep-banner__title { font-size: .875rem; font-weight: 650; }
+.ep-banner__meta { font-family: var(--ep-font-mono); font-size: .75rem; color: #9DB0A8; margin-top: 2px; }
+.ep-banner a { color: #fff; border-bottom: 1px solid rgba(255, 255, 255, .4); font-size: .8125rem; font-weight: 650; }
+.ep-banner a:hover { color: #fff; text-decoration: none; }
+.ep-banner--square { border-radius: 0; }
+
+/* Bandeau d'alerte manager */
+.ep-alertbar {
+    background: var(--ep-red); color: #fff;
+    padding: .875rem clamp(1rem, .5rem + 2vw, 1.75rem);
+    display: flex; align-items: center; gap: 1.125rem; flex-wrap: wrap;
+}
+.ep-alertbar__dot { width: 9px; height: 9px; border-radius: 50%; background: #FFD9D4; animation: epPulse 1.2s ease-in-out infinite; flex: none; }
+/* Le libellé doit pouvoir se replier : sinon il pousse la page en scroll horizontal. */
+.ep-alertbar > strong { flex: 1 1 auto; min-width: 0; }
+.ep-alertbar__item {
+    display: flex; align-items: center; gap: .625rem;
+    background: rgba(255, 255, 255, .14); border-radius: 8px; padding: .375rem .75rem;
+    flex-wrap: wrap; min-width: 0; max-width: 100%;
+}
+@media (max-width: 640px) {
+    .ep-alertbar { font-size: .8125rem; gap: .75rem; }
+    .ep-alertbar__item { width: 100%; }
+}
+.ep-alertbar__item a { color: #fff; border-bottom: 1px solid rgba(255, 255, 255, .5); font-size: .78125rem; font-weight: 650; }
+.ep-alertbar__item a:hover { color: #fff; text-decoration: none; }
+
+/* ---------- 12. Notation sur 5 -------------------------------------- */
+
+.ep-rating { display: flex; gap: .5rem; direction: rtl; justify-content: flex-end; }
+.ep-rating input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ep-rating label {
+    font-size: 1.875rem; line-height: 1; cursor: pointer; color: #DAD6CA;
+    transition: color .1s ease;
+}
+.ep-rating input:checked ~ label,
+.ep-rating label:hover,
+.ep-rating label:hover ~ label { color: var(--ep-amber); }
+.ep-rating input:focus-visible + label { outline: 2px solid var(--ep-green); outline-offset: 2px; border-radius: 4px; }
+
+.ep-chip {
+    font-size: .78125rem; font-weight: 600;
+    padding: .4375rem .6875rem; border-radius: 99px;
+    border: 1px solid var(--ep-border-input); color: var(--ep-text-3);
+    background: transparent; cursor: pointer;
+    display: inline-flex; align-items: center; gap: .375rem;
+}
+.ep-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ep-chip:has(input:checked) { background: var(--ep-green-8); border-color: #C9E0D6; color: var(--ep-green-dark); }
+
+/* ---------- 13. Visionneuse d'ordonnance ---------------------------- */
+
+.ep-viewer__stage {
+    background: var(--ep-bg-warm);
+    padding: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 150px;
+}
+.ep-viewer__stage img { max-width: 100%; max-height: 340px; border-radius: 4px; border: 1px solid var(--ep-rule); }
+.ep-viewer__bar { padding: .75rem .875rem; border-top: 1px solid var(--ep-rule-soft); display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.ep-viewer__btn { font-family: var(--ep-font-mono); font-size: .75rem; padding: .375rem .625rem; border-radius: var(--ep-radius-sm); border: 1px solid var(--ep-border-input); background: #fff; cursor: pointer; }
+
+/* Citation du commentaire client */
+.ep-quote {
+    background: var(--ep-amber-10);
+    border-left: 3px solid var(--ep-amber);
+    padding: .5625rem .75rem;
+    border-radius: 0 7px 7px 0;
+    font-size: .84375rem; line-height: 1.5; color: #5F3C08;
+}
+
+/* ---------- 14. Tableaux responsives -------------------------------- */
+
+.ep-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Pagination — voir resources/views/vendor/pagination/epharma.blade.php */
+.ep-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.ep-pager__count { margin: 0; color: var(--ep-muted); }
+.ep-pager__list { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; list-style: none; margin: 0; padding: 0; }
+.ep-pager__link {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px; padding: 0 .625rem;
+    border: 1px solid var(--ep-rule); border-radius: 8px;
+    background: var(--ep-surface);
+    font-size: .8125rem; font-weight: 600; color: var(--ep-text-2);
+}
+a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); text-decoration: none; }
+.ep-pager__link.is-current { background: var(--ep-green); border-color: var(--ep-green); color: #fff; }
+.ep-pager__link.is-disabled { opacity: .45; }
+.ep-pager__gap { padding: 0 .25rem; color: var(--ep-muted-3); }
+.ep-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+/* Les colonnes d'identité ne doivent pas se casser en colonne de lettres. */
+.ep-table .ep-cell-name { white-space: nowrap; }
+.ep-table thead th {
+    text-align: left;
+    padding: .625rem 1.125rem;
+    background: var(--ep-bg-warm);
+    border-bottom: 1px solid var(--ep-rule-soft);
+    font-family: var(--ep-font-mono);
+    font-size: .65625rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ep-muted-2); font-weight: 400; white-space: nowrap;
+}
+.ep-table tbody td { padding: .8125rem 1.125rem; border-bottom: 1px solid #F2F0EA; font-size: .84375rem; vertical-align: middle; }
+.ep-table tbody tr:last-child td { border-bottom: none; }
+.ep-table tbody tr:hover { background: #FCFBF8; }
+.ep-table .ep-cell-ref { font-family: var(--ep-font-mono); font-size: .78125rem; color: var(--ep-green); }
+.ep-table .ep-cell-num { font-family: var(--ep-font-mono); font-size: .8125rem; white-space: nowrap; }
+.ep-table .ep-cell-actions { display: flex; gap: .375rem; }
+
+/*
+   Sous 780px, chaque ligne devient une carte : les en-têtes sont repris
+   par l'attribut data-label de la cellule.
+*/
+@media (max-width: 780px) {
+    .ep-table--cards { min-width: 0; display: block; }
+    .ep-table--cards thead { display: none; }
+    .ep-table--cards tbody, .ep-table--cards tr, .ep-table--cards td { display: block; width: 100%; }
+    .ep-table--cards tr {
+        border: 1px solid var(--ep-rule);
+        border-radius: var(--ep-radius-lg);
+        padding: .875rem 1rem;
+        margin-bottom: .75rem;
+        background: var(--ep-surface);
+    }
+    .ep-table--cards tr:hover { background: var(--ep-surface); }
+    .ep-table--cards td { padding: .3125rem 0; border: none; display: flex; gap: .75rem; align-items: center; justify-content: space-between; }
+    .ep-table--cards td::before {
+        content: attr(data-label);
+        font-family: var(--ep-font-mono);
+        font-size: .625rem; letter-spacing: .1em; text-transform: uppercase;
+        color: var(--ep-muted-2); flex: none;
+    }
+    .ep-table--cards td:empty { display: none; }
+    .ep-table--cards .ep-cell-actions { justify-content: flex-end; flex-wrap: wrap; }
+    /* Un numéro de téléphone ou un montant ne se coupe pas en fin de ligne. */
+    .ep-table--cards td .ep-mono,
+    .ep-table--cards td .ep-cell-num { white-space: nowrap; }
+    .ep-table--cards td > * { min-width: 0; }
+
+    /* Une cellule qui porte un formulaire ou un bloc riche ne tient pas dans
+       la moitié droite : l'étiquette passe au-dessus et le contenu occupe
+       toute la largeur de la carte, sinon les champs se chevauchent. */
+    .ep-table--cards td.ep-cell-stack,
+    .ep-table--cards td:has(form) { display: block; }
+    .ep-table--cards td.ep-cell-stack::before,
+    .ep-table--cards td:has(form)::before { display: block; margin-bottom: .5rem; }
+    .ep-table--cards td:has(form) .ep-field { flex: 1 1 100%; }
+}
+
+/* ---------- 15. Compteurs & KPI ------------------------------------- */
+
+.ep-stat {
+    background: var(--ep-surface);
+    border: 1px solid var(--ep-rule);
+    border-radius: var(--ep-radius-lg);
+    padding: 1rem 1.125rem;
+    border-top: 3px solid var(--ep-green);
+    min-width: 0;
+}
+.ep-stat__label { font-family: var(--ep-font-mono); font-size: .65625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ep-muted-2); }
+.ep-stat__value { font-family: var(--ep-font-display); font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.375rem); line-height: .85; font-weight: 700; letter-spacing: -.035em; }
+.ep-stat__row { display: flex; align-items: flex-end; gap: .5rem; margin-top: .625rem; flex-wrap: wrap; }
+.ep-stat__delta { font-family: var(--ep-font-mono); font-size: .71875rem; color: var(--ep-muted-2); padding-bottom: 4px; }
+
+.ep-kpi { background: var(--ep-dark-2); border-radius: 10px; padding: .875rem; min-width: 0; }
+.ep-kpi__label { font-size: .71875rem; color: #8A9C94; line-height: 1.3; }
+.ep-kpi__value { font-family: var(--ep-font-display); font-size: 1.6875rem; font-weight: 700; letter-spacing: -.03em; color: #fff; }
+.ep-kpi__track { height: 4px; border-radius: 99px; background: #22332C; margin-top: .625rem; overflow: hidden; }
+.ep-kpi__fill { display: block; height: 100%; }
+
+.ep-meter { width: 82px; height: 6px; border-radius: 99px; background: var(--ep-rule-soft); overflow: hidden; flex: none; }
+.ep-meter span { display: block; height: 100%; }
+
+/* ---------- 16. Flux d'activité ------------------------------------- */
+
+.ep-feed { display: flex; flex-direction: column; }
+.ep-feed__item { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: .625rem; padding: .5625rem 1rem; align-items: start; }
+.ep-feed__time { font-family: var(--ep-font-mono); font-size: .71875rem; color: var(--ep-muted-3); padding-top: 2px; }
+.ep-feed__text { font-size: .8125rem; line-height: 1.45; color: var(--ep-text-2); }
+.ep-feed__tag { display: inline-block; margin-top: 4px; font-family: var(--ep-font-mono); font-size: .65625rem; }
+
+/* ---------- 17. Coquille back-office -------------------------------- */
+
+.ep-admin { display: grid; grid-template-columns: 1fr; min-height: 100vh; background: var(--ep-bg-warm); }
+@media (min-width: 1024px) {
+    .ep-admin { grid-template-columns: var(--ep-sidebar) minmax(0, 1fr); }
+}
+
+.ep-sidebar {
+    background: var(--ep-dark);
+    color: var(--ep-dark-text);
+    padding: 1.375rem 0 2rem;
+    display: flex;
+    flex-direction: column;
+}
+/* Colonne collante à partir de 1024px : sans cela la barre latérale prend la
+   hauteur de la page entière et la navigation — dont « Déconnexion » — se
+   retrouve tout en bas du document sur les listes longues. */
+@media (min-width: 1024px) {
+    .ep-sidebar {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+/* Tiroir sous 1024px */
+@media (max-width: 1023px) {
+    .ep-sidebar {
+        position: fixed; inset: 0 auto 0 0;
+        width: min(84vw, 300px);
+        z-index: 60;
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+        overflow-y: auto;
+    }
+    .ep-sidebar[data-open="true"] { transform: translateX(0); }
+    .ep-sidebar-scrim { position: fixed; inset: 0; background: rgba(18, 33, 27, .5); z-index: 55; }
+}
+
+.ep-sidebar__brand { padding: 0 1.25rem 1.375rem; display: flex; align-items: center; gap: .625rem; }
+.ep-sidebar__mark {
+    width: 30px; height: 30px; border-radius: 8px; background: var(--ep-green);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    font-family: var(--ep-font-display); font-weight: 700; font-size: 1.0625rem; flex: none;
+}
+.ep-sidebar__name { color: #fff; font-family: var(--ep-font-display); font-size: 1rem; font-weight: 700; letter-spacing: -.02em; }
+.ep-sidebar__role { font-family: var(--ep-font-mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ep-dark-muted); }
+
+.ep-nav { display: flex; flex-direction: column; }
+.ep-nav__link {
+    display: flex; align-items: center; gap: .625rem;
+    padding: .625rem 1.25rem;
+    font-size: .84375rem; font-weight: 500;
+    color: var(--ep-dark-text);
+    border-left: 3px solid transparent;
+}
+.ep-nav__link:hover { color: #fff; background: rgba(255, 255, 255, .04); text-decoration: none; }
+.ep-nav__link[aria-current="page"] {
+    color: #fff; font-weight: 700; background: var(--ep-dark-2); border-left-color: var(--ep-green-soft);
+}
+.ep-nav__label { flex: 1; min-width: 0; }
+.ep-nav__count {
+    font-family: var(--ep-font-mono); font-size: .6875rem;
+    min-width: 22px; height: 19px; padding: 0 6px; border-radius: 5px;
+    background: #22332C; color: #9DB0A8;
+    display: flex; align-items: center; justify-content: center;
+}
+.ep-nav__count--urgent { background: var(--ep-red); color: #fff; }
+.ep-nav__section { padding: 1rem 1.25rem .375rem; font-family: var(--ep-font-mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ep-dark-muted); }
+
+.ep-sidebar__user { margin-top: auto; padding: 1.25rem 1.25rem 0; border-top: 1px solid var(--ep-dark-3); }
+.ep-sidebar__avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; }
+.ep-sidebar__user-role { font-size: .65625rem; }
+
+.ep-topbar {
+    background: var(--ep-surface);
+    border-bottom: 1px solid var(--ep-rule);
+    padding: 1rem clamp(1rem, .5rem + 2vw, 1.75rem);
+    display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+}
+.ep-topbar__title { font-family: var(--ep-font-display); font-size: clamp(1.25rem, 1.05rem + .8vw, 1.5rem); font-weight: 700; letter-spacing: -.025em; margin: 0; }
+.ep-topbar__meta { font-family: var(--ep-font-mono); font-size: .71875rem; color: var(--ep-muted); margin-top: 3px; }
+.ep-topbar__actions { margin-left: auto; display: flex; align-items: center; gap: .625rem; flex-wrap: wrap; }
+@media (max-width: 640px) {
+    .ep-topbar__actions { margin-left: 0; width: 100%; }
+}
+
+.ep-live {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .5rem .75rem; border-radius: 8px;
+    background: var(--ep-green-8); color: var(--ep-green-dark);
+    font-size: .78125rem; font-weight: 650; white-space: nowrap;
+}
+.ep-live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ep-green); animation: epPulse 1.6s ease-in-out infinite; }
+
+.ep-burger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 8px;
+    border: 1px solid var(--ep-rule); background: #fff; cursor: pointer; color: var(--ep-ink);
+}
+@media (min-width: 1024px) { .ep-burger { display: none; } }
+
+.ep-main { min-width: 0; }
+.ep-main__body { padding: clamp(1rem, .5rem + 2vw, 1.5rem) clamp(1rem, .5rem + 2vw, 1.75rem); display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ---------- 18. Coquille boutique ----------------------------------- */
+
+.ep-utilitybar { background: var(--ep-bg-warm); border-bottom: 1px solid var(--ep-rule); }
+.ep-utilitybar__inner { display: flex; align-items: center; gap: 1.5rem; min-height: 38px; font-size: .78125rem; color: var(--ep-text-3); flex-wrap: wrap; padding-block: .375rem; }
+@media (max-width: 720px) { .ep-utilitybar { display: none; } }
+
+.ep-header { background: var(--ep-surface); border-bottom: 1px solid var(--ep-rule); position: relative; z-index: 20; }
+/* `padding-block` et non le raccourci `padding` : ce dernier remettait à zéro
+   le `padding-inline` de .ep-shell, et le logo comme la recherche venaient
+   coller aux bords de l'écran alors que le reste de la page est en retrait. */
+.ep-header__inner { padding-block: 1.125rem; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2.25rem; align-items: center; }
+@media (max-width: 900px) {
+    .ep-header__inner { grid-template-columns: auto auto; gap: 1rem; row-gap: .75rem; }
+    .ep-header__search { grid-column: 1 / -1; order: 3; }
+    .ep-header__account { justify-self: end; }
+}
+/* Sous 380 px, deux colonnes « auto » dépassent la largeur de l'écran et le
+   bloc compte se fait rogner : on laisse la colonne du logo se comprimer. */
+@media (max-width: 380px) {
+    .ep-header__inner { grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; }
+    .ep-logo { min-width: 0; }
+    .ep-logo__word { font-size: 1.1875rem; overflow: hidden; text-overflow: ellipsis; }
+    .ep-cart-pill { padding-inline: .75rem; }
+}
+
+.ep-logo { display: inline-flex; align-items: center; gap: .625rem; color: var(--ep-ink); }
+.ep-logo:hover { text-decoration: none; color: var(--ep-ink); }
+.ep-logo__mark {
+    width: 34px; height: 34px; border-radius: var(--ep-radius); background: var(--ep-green);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    font-family: var(--ep-font-display); font-weight: 700; font-size: 1.1875rem; flex: none;
+}
+.ep-logo__word { font-family: var(--ep-font-display); font-size: 1.4375rem; font-weight: 700; letter-spacing: -.025em; }
+
+.ep-account { display: flex; align-items: center; gap: 1.375rem; }
+.ep-account__link { display: flex; flex-direction: column; color: var(--ep-ink); font-size: .8125rem; line-height: 1.3; }
+.ep-account__link:hover { color: var(--ep-ink); text-decoration: none; }
+.ep-account__link span { color: var(--ep-muted); font-size: .71875rem; }
+.ep-account__link strong { font-weight: 650; }
+@media (max-width: 720px) { .ep-account__link--hide { display: none; } }
+
+.ep-cart-pill {
+    display: inline-flex; align-items: center; gap: .5625rem;
+    padding: .625rem 1rem; border-radius: var(--ep-radius);
+    background: var(--ep-green-8); color: var(--ep-green-dark);
+    font-weight: 650; font-size: .875rem; white-space: nowrap;
+}
+.ep-cart-pill:hover { text-decoration: none; color: var(--ep-green-dark); background: #DDEEE6; }
+.ep-cart-pill__count {
+    font-family: var(--ep-font-mono); min-width: 22px; height: 22px; border-radius: 99px;
+    background: var(--ep-green); color: #fff; font-size: .75rem;
+    display: flex; align-items: center; justify-content: center; padding: 0 5px;
+}
+
+.ep-mainnav { border-top: 1px solid var(--ep-rule-soft); }
+.ep-mainnav__inner { display: flex; align-items: center; gap: .25rem; min-height: 52px; overflow-x: auto; scrollbar-width: none; }
+.ep-mainnav__inner::-webkit-scrollbar { display: none; }
+/* Sous 900 px la barre déborde et défile : un dégradé sur le bord droit
+   signale qu'il reste des entrées, sinon rien ne le laisse deviner. */
+@media (max-width: 900px) {
+    .ep-mainnav { position: relative; }
+    .ep-mainnav::after {
+        content: '';
+        position: absolute; top: 0; right: 0; bottom: 0; width: 2.5rem;
+        background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--ep-surface));
+        pointer-events: none;
+    }
+}
+.ep-mainnav__link {
+    font-size: .90625rem; font-weight: 650; color: var(--ep-ink);
+    padding: .625rem .875rem; border-radius: 8px; white-space: nowrap;
+}
+.ep-mainnav__link:hover { background: var(--ep-bg-warm); text-decoration: none; color: var(--ep-ink); }
+.ep-mainnav__link[aria-current="page"] { background: var(--ep-green-8); color: var(--ep-green-dark); }
+.ep-mainnav__cta { margin-left: auto; }
+@media (max-width: 900px) { .ep-mainnav__cta { margin-left: 0; } }
+
+.ep-footer { background: var(--ep-ink); color: #B9C6BF; }
+.ep-footer a { color: #B9C6BF; font-size: .84375rem; }
+.ep-footer a:hover { color: #fff; }
+.ep-footer__grid { display: grid; gap: 2.5rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); padding-block: 4rem 2rem; }
+.ep-footer__col-title { font-family: var(--ep-font-mono); font-size: .65625rem; letter-spacing: .12em; text-transform: uppercase; color: #7E8F87; margin-bottom: 1rem; }
+.ep-footer__links { display: flex; flex-direction: column; gap: .6875rem; }
+.ep-footer__bottom {
+    border-top: 1px solid #2C4038; padding-block: 1.375rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    font-size: .78125rem; color: #7E8F87; flex-wrap: wrap;
+}
+
+/* Barre d'onglets mobile — parcours client sur téléphone */
+.ep-tabbar {
+    position: fixed; inset: auto 0 0 0; z-index: 40;
+    background: var(--ep-surface); border-top: 1px solid var(--ep-rule);
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+.ep-tabbar__link {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: .625rem .25rem; font-size: .625rem; font-weight: 600; color: var(--ep-muted);
+}
+.ep-tabbar__link:hover { text-decoration: none; }
+.ep-tabbar__link i { font-size: 1.0625rem; }
+.ep-tabbar__link[aria-current="page"] { color: var(--ep-green); }
+@media (min-width: 720px) { .ep-tabbar { display: none; } }
+@media (max-width: 719px) { .ep-has-tabbar { padding-bottom: 76px; } }
+
+/* Carte du chrono en débord de l'image du hero, uniquement quand la place existe. */
+.ep-hero-clock { left: 1rem; }
+@media (min-width: 1100px) { .ep-hero-clock { left: -28px; } }
+
+/* ---------- 19. États & divers -------------------------------------- */
+
+.ep-empty { text-align: center; padding: clamp(2rem, 1.5rem + 3vw, 4rem) 1.5rem; }
+.ep-empty__title { font-size: 1.0625rem; font-weight: 650; margin-bottom: .375rem; }
+.ep-empty__text { font-size: .875rem; color: var(--ep-muted); max-width: 44ch; margin: 0 auto; }
+
+.ep-flash { display: flex; align-items: flex-start; gap: .75rem; padding: .875rem 1rem; border-radius: var(--ep-radius); font-size: .875rem; font-weight: 500; }
+.ep-flash--success { background: var(--ep-green-8); color: var(--ep-green-dark); border: 1px solid #C9E0D6; }
+.ep-flash--error { background: var(--ep-red-8); color: var(--ep-red-deep); border: 1px solid #E0BDB8; }
+.ep-flash--info { background: var(--ep-amber-10); color: #7A4E0B; border: 1px solid #EBD9B4; }
+
+.ep-divider { height: 1px; background: var(--ep-rule); border: 0; margin: 0; }
+
+.ep-sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+.ep-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+
+@media print {
+    .ep-sidebar, .ep-tabbar, .ep-topbar__actions, .ep-mainnav { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ep-root *, .ep-root *::before, .ep-root *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+/* ---------- 20. Plancher tactile et lisibilité sur petits écrans -------
+   Les proportions du back-office sont pensées pour la souris. Au doigt, un
+   bouton de 30 px se rate, et une étiquette mono de 10 px ne se lit pas.
+   On relève donc un plancher sans toucher au rendu desktop. */
+
+/* Cibles tactiles : sur téléphone, et sur tout écran tactile quelle que soit
+   sa largeur — une tablette de 1024 px se pilote aussi au doigt. */
+@media (max-width: 767px), (pointer: coarse) {
+    .ep-btn { min-height: 44px; padding-block: .625rem; }
+    .ep-btn--sm { min-height: 40px; font-size: .8125rem; padding: .375rem .75rem; }
+    .ep-btn--md { min-height: 42px; font-size: .875rem; }
+    .ep-viewer__btn { min-height: 40px; min-width: 40px; font-size: .8125rem; }
+
+    /* Champs : même gabarit que les boutons. 16 px empêche iOS de zoomer
+       automatiquement à la mise au point du champ. */
+    .ep-input, .ep-select, .ep-textarea { min-height: 44px; font-size: 1rem; }
+    .ep-textarea { min-height: 88px; }
+}
+
+/* Lisibilité : aucun texte sous 12 px du téléphone à la tablette — y compris
+   la tablette en paysage, large de 1024 px exactement. */
+@media (max-width: 1024px), (pointer: coarse) {
+    .ep-small, .ep-mono, .ep-stat__label, .ep-footer__col-title,
+    .ep-badge, .ep-feed__time, .ep-feed__tag,
+    .ep-eyebrow, .ep-sidebar__role, .ep-sidebar__name,
+    .ep-badge--rx, .ep-table thead th, .ep-sidebar__user-role { font-size: .75rem; }
+}
+
+/* Ligne de notification : badge, texte, actions. Au téléphone les trois
+   colonnes ne tiennent pas — les actions passent sous le texte plutôt que
+   d'être rognées par le bord de l'écran. */
+.ep-notif {
+    display: flex;
+    gap: .875rem;
+    padding: 1rem 1.125rem;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--ep-rule-soft);
+}
+.ep-notif__body { flex: 1; min-width: 0; }
+.ep-notif__actions { flex: none; }
+@media (max-width: 640px) {
+    .ep-notif { flex-wrap: wrap; }
+    .ep-notif__body { flex: 1 1 100%; }
+    .ep-notif__actions { flex: 1 1 100%; }
+}
