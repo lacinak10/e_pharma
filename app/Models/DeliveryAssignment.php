@@ -21,6 +21,6 @@ class DeliveryAssignment extends Model
     ];
 
     public function order(){ return $this->belongsTo(Order::class); }
-    public function courier(){ return $this->belongsTo(User::class, 'courier_id'); }
-    public function assigner(){ return $this->belongsTo(User::class, 'assigned_by'); }
+    public function courier(){ return $this->belongsTo(User::class, 'courier_id')->withTrashed(); }
+    public function assigner(){ return $this->belongsTo(User::class, 'assigned_by')->withTrashed(); }
 }

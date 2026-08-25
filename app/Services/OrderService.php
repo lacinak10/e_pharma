@@ -2,142 +2,130 @@
 
 namespace App\Services;
 
+use App\Enums\ItemAvailability;
 use App\Enums\OrderStatus;
 use App\Models\Medicine;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
+use App\Notifications\OrderProgressNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 class OrderService
 {
-    public function __construct(private StockService $stockService)
-    {
-    }
+    private const DELIVERY_FEE = 1500;
 
     /**
      * Crée une commande à partir du panier session.
      *
-     * @param  int   $userId
-     * @param  array $cart    [medicine_id => ['id', 'qty', ...]]
-     * @param  array $data    Champs validés (delivery_address, delivery_phone, notes, payment_method)
-     * @return Order
+     * @param  array<int, array{id: int, qty: int}>  $cart
+     * @param  array<string, mixed>                  $data
      */
     public function createFromCart(int $userId, array $cart, array $data): Order
     {
         return DB::transaction(function () use ($userId, $cart, $data) {
-            $subtotal = 0;
-
-            // Verrouille les médicaments pour éviter les race conditions
+            /*
+             * ePharma ne détient pas de stock : rien n'est réservé ici. Le panier
+             * exprime une demande, et c'est le manager qui établira la
+             * disponibilité réelle en appelant les pharmacies partenaires.
+             * Les montants sont donc indicatifs jusqu'au verdict.
+             */
             $medicines = Medicine::query()
                 ->whereIn('id', array_keys($cart))
-                ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
-            foreach ($cart as $line) {
-                $medicine = $medicines->get($line['id']);
+            $lines = collect($cart)
+                ->map(fn (array $line) => [$medicines->get($line['id']), (int) $line['qty']])
+                ->filter(fn (array $pair) => $pair[0]?->is_active);
 
-                if (!$medicine || !$medicine->is_active) {
-                    abort(400, "Un article n'est plus disponible.");
-                }
-
-                if ($medicine->stock < (int) $line['qty']) {
-                    abort(400, "Stock insuffisant pour {$medicine->name}. Disponible : {$medicine->stock}.");
-                }
-
-                $subtotal += ((int) $medicine->price) * ((int) $line['qty']);
+            if ($lines->isEmpty()) {
+                abort(400, "Aucun des médicaments demandés n'est référencé au catalogue.");
             }
 
-            $deliveryFee = 1500;
-            $total       = $subtotal + $deliveryFee;
+            $subtotal = $lines->sum(fn (array $pair) => (int) $pair[0]->price * $pair[1]);
+            $order    = $this->openOrder($userId, $data, $subtotal);
 
-            $order = Order::create([
-                'user_id'          => $userId,
-                'status'           => OrderStatus::PENDING_ASSIGNMENT,
-                'delivery_address' => $data['delivery_address'],
-                'delivery_phone'   => $data['delivery_phone'] ?? null,
-                'notes'            => $data['notes'] ?? null,
-                'payment_method'   => $data['payment_method'],
-                'subtotal'         => $subtotal,
-                'delivery_fee'     => $deliveryFee,
-                'total_amount'     => $total,
-            ]);
-
-            foreach ($cart as $line) {
-                $medicine = $medicines->get($line['id']);
-
+            foreach ($lines as [$medicine, $quantity]) {
                 OrderItem::create([
-                    'order_id'      => $order->id,
-                    'medicine_id'   => $medicine->id,
-                    'medicine_name' => $medicine->name,
-                    'unit_price'    => (int) $medicine->price,
-                    'quantity'      => (int) $line['qty'],
-                    'line_total'    => ((int) $medicine->price) * ((int) $line['qty']),
+                    'order_id'              => $order->id,
+                    'medicine_id'           => $medicine->id,
+                    'medicine_name'         => $medicine->name,
+                    'unit_price'            => (int) $medicine->price,
+                    'quantity'              => $quantity,
+                    'line_total'            => (int) $medicine->price * $quantity,
+                    'availability'          => ItemAvailability::PENDING,
+                    'requires_prescription' => (bool) $medicine->requires_prescription,
                 ]);
-
-                $medicine->decrement('stock', (int) $line['qty']);
-                $this->stockService->updateStatus($medicine->fresh());
             }
 
-            // Notifier tous les managers
-            $managers = User::where('role', User::ROLE_MANAGER)->get();
-            Notification::send($managers, new NewOrderNotification($order->load('user')));
-
-            return $order;
+            return $this->announce($order);
         });
     }
 
     /**
-     * Crée une commande depuis une ordonnance (sans articles panier).
+     * Crée une commande depuis une ordonnance téléversée.
+     * Le contenu exact sera établi par le manager après lecture de l'ordonnance.
      *
-     * @param  int    $userId
-     * @param  string $prescriptionPath  Chemin relatif sur le disque local
-     * @param  array  $data              Champs validés (delivery_address, delivery_phone, notes, payment_method)
-     * @return Order
+     * @param  array<string, mixed>  $data  delivery_address, delivery_phone, notes,
+     *                                      payment_method, prescription_scope, prescription_comment
      */
     public function createFromPrescription(int $userId, string $prescriptionPath, array $data): Order
     {
         return DB::transaction(function () use ($userId, $prescriptionPath, $data) {
-            $deliveryFee = 1500;
-
-            $order = Order::create([
-                'user_id'           => $userId,
-                'status'            => OrderStatus::PENDING_ASSIGNMENT,
-                'delivery_address'  => $data['delivery_address'],
-                'delivery_phone'    => $data['delivery_phone'] ?? null,
-                'notes'             => $data['notes'] ?? null,
-                'payment_method'    => $data['payment_method'],
-                'subtotal'          => 0,
-                'delivery_fee'      => $deliveryFee,
-                'total_amount'      => $deliveryFee,
-                'has_prescription'  => true,
-                'prescription_path' => $prescriptionPath,
+            $order = $this->openOrder($userId, $data, subtotal: 0, prescription: [
+                'has_prescription'     => true,
+                'prescription_path'    => $prescriptionPath,
+                'prescription_scope'   => $data['prescription_scope'] ?? 'all',
+                'prescription_comment' => $data['prescription_comment'] ?? null,
             ]);
 
-            // Notifier tous les managers
-            $managers = User::where('role', User::ROLE_MANAGER)->get();
-            Notification::send($managers, new NewOrderNotification($order->load('user')));
-
-            return $order;
+            return $this->announce($order);
         });
     }
 
     /**
-     * Annule une commande et restaure le stock.
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $prescription
      */
-    public function cancel(Order $order): void
+    private function openOrder(int $userId, array $data, int $subtotal, array $prescription = []): Order
     {
-        DB::transaction(function () use ($order) {
-            $order->update([
-                'status'      => OrderStatus::CANCELED,
-                'canceled_at' => now(),
-            ]);
+        return Order::create([
+            'user_id'          => $userId,
+            'status'           => OrderStatus::PENDING_VALIDATION,
+            'delivery_address' => $data['delivery_address'],
+            'delivery_phone'   => $data['delivery_phone'] ?? null,
+            'notes'            => $data['notes'] ?? null,
+            'payment_method'   => $data['payment_method'],
+            'subtotal'         => $subtotal,
+            'delivery_fee'     => self::DELIVERY_FEE,
+            'total_amount'     => $subtotal + self::DELIVERY_FEE,
+            ...$prescription,
+        ]);
+    }
 
-            $order->load('items.medicine');
-            $this->stockService->restoreOrderStock($order);
-        });
+    /**
+     * Ouvre le journal de la commande, confirme au client et alerte les managers.
+     * C'est le message n° 1 du parcours : « prise en charge, en attente de validation ».
+     */
+    private function announce(Order $order): Order
+    {
+        $order->events()->create([
+            'user_id' => $order->user_id,
+            'status'  => OrderStatus::PENDING_VALIDATION,
+            'message' => 'Commande reçue et en attente de validation par le manager.',
+        ]);
+
+        $order->load('client');
+        $order->client?->notify(new OrderProgressNotification($order));
+
+        Notification::send(
+            User::where('role', User::ROLE_MANAGER)->get(),
+            new NewOrderNotification($order)
+        );
+
+        return $order;
     }
 }

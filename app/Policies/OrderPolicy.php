@@ -11,90 +11,71 @@ class OrderPolicy
 {
     public function view(User $user, Order $order): bool
     {
-        if ($user->isManager()) {
-            return true;
-        }
-
-        if ($user->isClient()) {
-            return $order->user_id === $user->id;
-        }
-
-        if ($user->isCourier()) {
-            return $order->assignment && $order->assignment->courier_id === $user->id;
-        }
-
-        return false;
+        return match (true) {
+            $user->isManager() => true,
+            $user->isClient()  => $order->user_id === $user->id,
+            $user->isCourier() => $order->assignment?->courier_id === $user->id,
+            default            => false,
+        };
     }
 
+    /** Le client garde la main tant que le livreur n'est pas engagé. */
     public function cancel(User $user, Order $order): bool
     {
-        if (!$user->isClient()) {
-            return false;
+        if ($user->isManager()) {
+            return ! $order->status->isFinal() && $order->status !== OrderStatus::DELIVERED;
         }
 
-        if ($order->user_id !== $user->id) {
-            return false;
-        }
-
-        // Annulation autorisée tant que pas en livraison / livrée / déjà annulée
-        return in_array($order->status, [
-            OrderStatus::PENDING_ASSIGNMENT,
-            OrderStatus::ASSIGNED,
-            OrderStatus::REFUSED,
-        ], true);
+        return $user->isClient()
+            && $order->user_id === $user->id
+            && $order->status->isCancelableByClient();
     }
 
+    /** Le manager traite la commande : validation, verdict, refus. */
+    public function manage(User $user, Order $order): bool
+    {
+        return $user->isManager() && $order->status->needsManager();
+    }
+
+    /** Attribution d'un livreur : seulement après un verdict favorable. */
     public function assign(User $user, Order $order): bool
     {
-        if (!$user->isManager()) {
+        if (! $user->isManager()) {
             return false;
         }
 
-        // Ne pas affecter si déjà livré / annulé / en livraison
-        if (in_array($order->status, [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::IN_DELIVERY], true)) {
+        if (! in_array($order->status, [OrderStatus::AVAILABLE, OrderStatus::PARTIALLY_AVAILABLE], true)) {
             return false;
         }
 
-        // Ne pas réaffecter si déjà accepté
-        if ($order->assignment && $order->assignment->status === AssignmentStatus::ACCEPTED) {
-            return false;
-        }
-
-        return true;
+        // Ne pas réattribuer une course déjà acceptée par un livreur.
+        return $order->assignment?->status !== AssignmentStatus::ACCEPTED;
     }
 
+    /** Le livreur accepte ou refuse la course qui vient de lui être confiée. */
     public function courierRespond(User $user, Order $order): bool
     {
-        if (!$user->isCourier()) {
-            return false;
-        }
-
-        if (!$order->assignment || $order->assignment->courier_id !== $user->id) {
-            return false;
-        }
-
-        return $order->status === OrderStatus::ASSIGNED
+        return $user->isCourier()
+            && $order->assignment?->courier_id === $user->id
+            && $order->status === OrderStatus::COURIER_ASSIGNED
             && $order->assignment->status === AssignmentStatus::ASSIGNED;
     }
 
-    public function courierUpdateStatus(User $user, Order $order): bool
+    /** Le livreur fait avancer sa course d'une des cinq étapes. */
+    public function courierAdvance(User $user, Order $order): bool
     {
-        if (!$user->isCourier()) {
-            return false;
-        }
+        return $user->isCourier()
+            && $order->assignment?->courier_id === $user->id
+            && $order->status->nextCourierStep() !== null
+            && $order->assignment->status !== AssignmentStatus::REFUSED;
+    }
 
-        if (!$order->assignment || $order->assignment->courier_id !== $user->id) {
-            return false;
-        }
-
-        // Pour changer statut, l’affectation doit être acceptée
-        if ($order->assignment->status !== AssignmentStatus::ACCEPTED) {
-            return false;
-        }
-
-        return in_array($order->status, [
-            OrderStatus::ACCEPTED,
-            OrderStatus::IN_DELIVERY,
-        ], true);
+    /** Le client note son livreur une fois la commande reçue. */
+    public function review(User $user, Order $order): bool
+    {
+        return $user->isClient()
+            && $order->user_id === $user->id
+            && $order->status === OrderStatus::DELIVERED
+            && $order->assignment?->courier_id !== null;
     }
 }

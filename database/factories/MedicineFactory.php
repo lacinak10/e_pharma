@@ -14,25 +14,15 @@ class MedicineFactory extends Factory
 
     public function definition(): array
     {
-        $stock     = $this->faker->numberBetween(0, 200);
-        $threshold = $this->faker->numberBetween(5, 30);
-
-        if ($stock <= 0) {
-            $status = 'Épuisé';
-        } elseif ($stock <= $threshold) {
-            $status = 'Stock faible';
-        } else {
-            $status = 'En stock';
-        }
-
         return [
             'category_id'     => Category::inRandomOrder()->value('id'),
             'name'            => $this->faker->unique()->words(3, true),
             'description'     => $this->faker->paragraph(),
+            'indication'      => $this->faker->sentence(4),
+            'dosage'          => $this->faker->numberBetween(50, 1000) . ' mg',
+            'pack'            => $this->faker->numberBetween(6, 30) . ' comprimés',
+            'requires_prescription' => $this->faker->boolean(30),
             'price'           => $this->faker->numberBetween(500, 50000),
-            'stock'           => $stock,
-            'alert_threshold' => $threshold,
-            'status'          => $status,
             'reference'       => 'MED-' . str_pad(self::$refCounter++, 5, '0', STR_PAD_LEFT),
             'image_url'       => null,
             'is_active'       => $this->faker->boolean(90),
