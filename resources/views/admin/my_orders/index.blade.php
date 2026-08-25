@@ -1,117 +1,87 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Mes livraisons')
-@section('page_title','Mes livraisons')
+@section('title', 'Mes courses — ePharma')
+@section('page_title', 'Mes courses')
+@section('page_subtitle', 'Ce qui vous attend, et ce que vous avez déjà livré')
 
 @section('content')
-@php
-    use App\Enums\OrderStatus;
-    use App\Enums\AssignmentStatus;
-
-    $status = $status ?? request('status');
-
-    $orderBadge = fn(OrderStatus $s) => match($s){
-        OrderStatus::PENDING_ASSIGNMENT => 'yellow',
-        OrderStatus::ASSIGNED           => 'blue',
-        OrderStatus::ACCEPTED           => 'orange',
-        OrderStatus::IN_DELIVERY        => 'indigo',
-        OrderStatus::DELIVERED          => 'green',
-        OrderStatus::REFUSED            => 'red',
-        OrderStatus::CANCELED           => 'red',
-        default                         => 'gray',
-    };
-
-    $statusOptions = [
-        ''                                     => 'Tous les statuts',
-        OrderStatus::PENDING_ASSIGNMENT->value => 'En attente livreur',
-        OrderStatus::ASSIGNED->value           => 'Affectée',
-        OrderStatus::ACCEPTED->value           => 'Acceptée',
-        OrderStatus::IN_DELIVERY->value        => 'En livraison',
-        OrderStatus::DELIVERED->value          => 'Livrée',
-        OrderStatus::CANCELED->value           => 'Annulée',
-    ];
-@endphp
-
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
+    <div class="ep-grid ep-grid--stats">
+        <x-ep.stat label="Nouvelles courses" :value="$counts['new']" color="#B87514"
+                   :href="route('courier.my_orders.index', ['filter' => 'new'])" />
+        <x-ep.stat label="En cours" :value="$counts['active']" color="#33557F"
+                   :href="route('courier.my_orders.index', ['filter' => 'active'])" />
+        <x-ep.stat label="Terminées" :value="$counts['done']" color="#0E5C43"
+                   :href="route('courier.my_orders.index', ['filter' => 'done'])" />
     </div>
-@endif
 
-<x-admin.card title="Mes livraisons" class="p-0">
-    <x-slot:actions>
-        <form method="GET" class="flex gap-2 items-center">
-            <x-admin.select name="status">
-                @foreach($statusOptions as $val => $txt)
-                    <option value="{{ $val }}" {{ (string)$status === (string)$val ? 'selected' : '' }}>
-                        {{ $txt }}
-                    </option>
+    <x-ep.card flush>
+        <header class="ep-card__head">
+            <h2 class="ep-card__title">
+                {{ ['new' => 'Nouvelles courses', 'active' => 'Courses en cours', 'done' => 'Historique'][$filter] ?? 'Toutes mes courses' }}
+            </h2>
+            <div class="ep-row ep-spacer" style="gap:.25rem">
+                @foreach(['all' => 'Toutes', 'new' => 'Nouvelles', 'active' => 'En cours', 'done' => 'Terminées'] as $value => $label)
+                    <a href="{{ route('courier.my_orders.index', $value === 'all' ? [] : ['filter' => $value]) }}"
+                       class="ep-btn ep-btn--sm {{ $filter === $value ? 'ep-btn--primary' : 'ep-btn--ghost' }}">{{ $label }}</a>
                 @endforeach
-            </x-admin.select>
-            <x-admin.button type="submit" variant="outline" icon="fa-solid fa-magnifying-glass">Filtrer</x-admin.button>
-        </form>
-    </x-slot:actions>
+            </div>
+        </header>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commande</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-            </thead>
+        @if($orders->isEmpty())
+            <x-ep.empty title="Aucune course ici."
+                        text="Les courses que le manager vous attribue apparaissent dans cette liste." />
+        @else
+            <div class="ep-table-wrap">
+                <table class="ep-table ep-table--cards">
+                    <thead>
+                        <tr>
+                            <th scope="col">Référence</th>
+                            <th scope="col">Retrait</th>
+                            <th scope="col">Client</th>
+                            <th scope="col">Étape</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($orders as $order)
+                            <tr>
+                                <td data-label="Référence">
+                                    <span class="ep-cell-ref">{{ $order->reference }}</span>
+                                    @if($order->has_prescription)<span class="ep-badge ep-badge--rx">RX</span>@endif
+                                </td>
+                                <td data-label="Retrait">
+                                    <p style="font-size:.84375rem;margin:0">{{ $order->pharmacy?->name ?? 'Pharmacie à confirmer' }}</p>
+                                    @if($order->pharmacy)
+                                        <a href="tel:{{ preg_replace('/\s+/', '', $order->pharmacy->phone) }}" class="ep-mono ep-small">
+                                            {{ $order->pharmacy->phone }}
+                                        </a>
+                                    @endif
+                                </td>
+                                <td data-label="Client">
+                                    <p style="font-size:.84375rem;font-weight:650;margin:0">{{ $order->client?->short_name }}</p>
+                                    <p class="ep-small" style="margin:0">{{ Str::limit($order->delivery_address, 28) }}</p>
+                                </td>
+                                <td data-label="Étape"><x-ep.badge :status="$order->status" /></td>
+                                <td data-label="Action">
+                                    <div class="ep-cell-actions">
+                                        @if($order->status->courierActionLabel())
+                                            <form method="POST" action="{{ route($order->status === \App\Enums\OrderStatus::COURIER_ASSIGNED ? 'courier.my_orders.accept' : 'courier.my_orders.advance', $order) }}">
+                                                @csrf @method('PATCH')
+                                                <button type="submit" class="ep-btn ep-btn--primary ep-btn--sm">
+                                                    {{ $order->status->courierActionLabel() }}
+                                                </button>
+                                            </form>
+                                        @endif
+                                        <a href="{{ route('courier.my_orders.show', $order) }}" class="ep-btn ep-btn--ghost ep-btn--sm">Détail</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </x-ep.card>
 
-            <tbody class="bg-white divide-y divide-gray-200">
-            @forelse($orders as $o)
-                <tr>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                        #EP-{{ $o->id }}
-                        @if($o->has_prescription)
-                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-                                <i class="fa-solid fa-file-medical mr-1 text-xs"></i>Ord.
-                            </span>
-                        @endif
-                    </td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $o->user?->name ?? 'Client' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Str::limit($o->delivery_address, 35) }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ number_format((int)$o->total_amount,0,',',' ') }} FCFA</td>
-                    <td class="px-6 py-4">
-                        <x-admin.badge :text="$o->status->label()" :variant="$orderBadge($o->status)" />
-                    </td>
-                    <td class="px-6 py-4 text-sm flex gap-3 items-center">
-                        <a href="{{ route('courier.my_orders.show',$o) }}" class="text-primary hover:text-secondary" title="Voir">
-                            <i class="fa-regular fa-eye"></i>
-                        </a>
-
-                        @if($o->assignment?->status === AssignmentStatus::ASSIGNED)
-                            <form method="POST" action="{{ route('courier.my_orders.accept',$o) }}">
-                                @csrf @method('PATCH')
-                                <button class="text-green-700 hover:opacity-80" title="Accepter">
-                                    <i class="fa-solid fa-circle-check"></i>
-                                </button>
-                            </form>
-                            <form method="POST" action="{{ route('courier.my_orders.refuse',$o) }}">
-                                @csrf @method('PATCH')
-                                <button class="text-danger hover:opacity-80" title="Refuser">
-                                    <i class="fa-solid fa-circle-xmark"></i>
-                                </button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-6 py-10">
-                    <x-admin.empty-state title="Aucune livraison" description="Aucune commande assignée pour le moment." icon="fa-solid fa-inbox" />
-                </td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <x-admin.pagination :paginator="$orders" />
-</x-admin.card>
+    @if($orders->hasPages()) {{ $orders->links() }} @endif
 @endsection

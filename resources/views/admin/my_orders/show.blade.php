@@ -1,100 +1,119 @@
 @extends('layouts.admin')
 
-@section('title','E-PHARMA - Détail livraison')
-@section('page_title','Détail livraison')
+@section('title', 'Course ' . $order->reference . ' — ePharma')
+@section('page_title', 'Course ' . $order->reference)
+@section('page_subtitle', $order->client?->name . ' · ' . $order->delivery_address)
 
 @section('content')
-@if(session('success'))
-    <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-        {{ session('success') }}
-    </div>
-@endif
+    <div class="ep-split">
+        <div class="ep-stack">
 
-<x-admin.card title="Commande #EP-{{ $order->id }}">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
-            <div class="text-xs text-gray-500">Client</div>
-            <div class="text-sm font-semibold text-gray-900">{{ $order->user?->name ?? 'Client' }}</div>
-        </div>
-        <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
-            <div class="text-xs text-gray-500">Téléphone</div>
-            <div class="text-sm font-semibold text-gray-900">{{ $order->delivery_phone ?? '—' }}</div>
-        </div>
+            {{-- Action principale : l'étape suivante, en gros --}}
+            @if($order->status->courierActionLabel())
+                <x-ep.card>
+                    <p class="ep-eyebrow">Étape suivante</p>
+                    <p class="ep-h3" style="margin:.625rem 0 1.25rem">{{ $order->status->courierActionLabel() }}</p>
 
-        <div class="p-4 rounded-lg bg-gray-50 border border-gray-100 md:col-span-2">
-            <div class="text-xs text-gray-500">Adresse</div>
-            <div class="text-sm font-semibold text-gray-900">{{ $order->delivery_address }}</div>
-        </div>
-    </div>
+                    <div class="ep-row">
+                        <form method="POST" action="{{ route($order->status === \App\Enums\OrderStatus::COURIER_ASSIGNED ? 'courier.my_orders.accept' : 'courier.my_orders.advance', $order) }}">
+                            @csrf @method('PATCH')
+                            <button type="submit" class="ep-btn ep-btn--primary">{{ $order->status->courierActionLabel() }}</button>
+                        </form>
 
-    <div class="mt-6">
-        <div class="text-sm font-semibold text-gray-800 mb-2">Articles</div>
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produit</th>
-                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qté</th>
-                </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                @foreach($order->items as $it)
-                    <tr>
-                        <td class="px-5 py-3 text-sm text-gray-800">{{ $it->medicine?->name ?? 'Produit' }}</td>
-                        <td class="px-5 py-3 text-sm text-gray-700">{{ $it->quantity }}</td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    @if($order->has_prescription)
-    <div class="mt-6 p-5 rounded-xl bg-purple-50 border border-purple-200">
-        <div class="flex items-center gap-2 mb-3">
-            <i class="fa-solid fa-file-medical text-purple-600 text-lg"></i>
-            <span class="text-sm font-semibold text-purple-900">Ordonnance jointe</span>
-            @php $ext = strtoupper(pathinfo($order->prescription_path, PATHINFO_EXTENSION)); @endphp
-            <span class="ml-auto text-xs text-purple-600 font-mono">{{ $ext }}</span>
-        </div>
-        <a href="{{ route('courier.my_orders.prescription', $order) }}"
-           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition">
-            <i class="fa-solid fa-download"></i> Télécharger l'ordonnance
-        </a>
-    </div>
-    @endif
-
-    {{-- Actions livreur selon statut assignment --}}
-    @php $a = $order->assignment; @endphp
-    <div class="pt-4 border-t mt-6 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-        <a href="{{ route('courier.my_orders.index') }}" class="text-sm text-gray-700 hover:text-gray-900">
-            ← Retour
-        </a>
-
-        <div class="flex flex-wrap gap-2">
-            @if($a?->status === App\Enums\AssignmentStatus::ASSIGNED)
-                <form method="POST" action="{{ route('courier.my_orders.accept',$order) }}">
-                    @csrf @method('PATCH')
-                    <x-admin.button type="submit" variant="primary" icon="fa-solid fa-circle-check">Accepter</x-admin.button>
-                </form>
-                <form method="POST" action="{{ route('courier.my_orders.refuse',$order) }}">
-                    @csrf @method('PATCH')
-                    <x-admin.button type="submit" variant="outline" icon="fa-solid fa-circle-xmark">Refuser</x-admin.button>
-                </form>
-            @elseif($a?->status === App\Enums\AssignmentStatus::ACCEPTED)
-                <form method="POST" action="{{ route('courier.my_orders.start',$order) }}">
-                    @csrf @method('PATCH')
-                    <x-admin.button type="submit" variant="primary" icon="fa-solid fa-truck">Démarrer livraison</x-admin.button>
-                </form>
-            @elseif($a?->status === App\Enums\AssignmentStatus::DELIVERING)
-                <form method="POST" action="{{ route('courier.my_orders.delivered',$order) }}">
-                    @csrf @method('PATCH')
-                    <x-admin.button type="submit" variant="primary" icon="fa-solid fa-circle-check">Marquer livrée</x-admin.button>
-                </form>
+                        @if($order->status === \App\Enums\OrderStatus::COURIER_ASSIGNED)
+                            <form method="POST" action="{{ route('courier.my_orders.refuse', $order) }}" class="ep-row" style="flex:1;min-width:240px">
+                                @csrf @method('PATCH')
+                                <input class="ep-input" name="note" maxlength="255" placeholder="Motif (facultatif)" style="flex:1;min-width:140px">
+                                <button type="submit" class="ep-btn ep-btn--danger-soft">Refuser</button>
+                            </form>
+                        @endif
+                    </div>
+                </x-ep.card>
             @else
-                <span class="text-sm text-gray-500">Statut: {{ $a?->status?->label() ?? '—' }}</span>
+                <x-ep.card>
+                    <div class="ep-row">
+                        <x-ep.badge :status="$order->status" />
+                        <span class="ep-small">{{ $order->status->label() }}</span>
+                    </div>
+                </x-ep.card>
+            @endif
+
+            <x-ep.card title="Progression de la course">
+                <x-ep.timeline :order="$order" />
+            </x-ep.card>
+
+            <x-ep.card title="Médicaments à récupérer" flush>
+                <div style="padding:.5rem 0">
+                    @forelse($order->items as $item)
+                        <div class="ep-row ep-row--nowrap" style="gap:.75rem;padding:.625rem 1.125rem">
+                            <div style="flex:1;min-width:0">
+                                <p style="font-size:.84375rem;font-weight:650;margin:0">
+                                    {{ $item->medicine_name }}
+                                    @if($item->requires_prescription)<span class="ep-badge ep-badge--rx">RX</span>@endif
+                                </p>
+                                <p class="ep-mono ep-small" style="margin:0">{{ $item->pack }}</p>
+                            </div>
+                            <span class="ep-mono" style="font-size:.9375rem">× {{ $item->quantity }}</span>
+                        </div>
+                    @empty
+                        <p class="ep-small" style="padding:.625rem 1.125rem;margin:0">
+                            Contenu défini par le manager à partir de l'ordonnance.
+                        </p>
+                    @endforelse
+                </div>
+            </x-ep.card>
+        </div>
+
+        <div class="ep-stack">
+            <x-ep.card title="Retrait">
+                @if($order->pharmacy)
+                    <p style="font-size:.9375rem;font-weight:650;margin:0">{{ $order->pharmacy->name }}</p>
+                    <p class="ep-small" style="margin:.25rem 0 .75rem">{{ $order->pharmacy->area_label }}</p>
+                    <a href="tel:{{ preg_replace('/\s+/', '', $order->pharmacy->phone) }}" class="ep-btn ep-btn--ghost ep-btn--block">
+                        Appeler la pharmacie
+                    </a>
+                @else
+                    <p class="ep-small" style="margin:0">Pharmacie à confirmer par le manager.</p>
+                @endif
+            </x-ep.card>
+
+            <x-ep.card title="Client">
+                <p style="font-size:.9375rem;font-weight:650;margin:0">{{ $order->client?->name }}</p>
+                <p class="ep-small" style="margin:.25rem 0 .75rem">{{ $order->delivery_address }}</p>
+                @if($order->delivery_phone)
+                    <a href="tel:{{ preg_replace('/\s+/', '', $order->delivery_phone) }}" class="ep-btn ep-btn--primary ep-btn--block">
+                        Appeler le client
+                    </a>
+                @endif
+                @if($order->delivery_code)
+                    <p class="ep-small" style="margin:1rem 0 0">
+                        Code de confirmation attendu :
+                        <strong class="ep-mono" style="font-size:1rem">{{ $order->delivery_code }}</strong>
+                    </p>
+                @endif
+
+                {{-- Le livreur doit savoir avant de partir s'il encaisse, et combien. --}}
+                <p class="ep-small" style="margin:1rem 0 0">
+                    Paiement : <strong>{{ $order->payment_label }}</strong>
+                    @if($order->collectsCash())
+                        <br>À encaisser :
+                        <strong class="ep-mono" style="font-size:1rem">{{ number_format($order->total_amount, 0, ',', ' ') }} F</strong>
+                    @else
+                        <br>Déjà réglé, rien à encaisser.
+                    @endif
+                </p>
+                @if($order->notes)
+                    <p class="ep-quote" style="margin-top:.75rem">« {{ $order->notes }} »</p>
+                @endif
+            </x-ep.card>
+
+            @if($order->has_prescription && $order->prescription_path)
+                <x-ep.card title="Ordonnance">
+                    <a href="{{ route('courier.my_orders.prescription', $order) }}" class="ep-btn ep-btn--ghost ep-btn--block">
+                        Télécharger l'ordonnance
+                    </a>
+                </x-ep.card>
             @endif
         </div>
     </div>
-</x-admin.card>
 @endsection

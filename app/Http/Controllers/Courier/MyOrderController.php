@@ -2,118 +2,111 @@
 
 namespace App\Http\Controllers\Courier;
 
-use App\Enums\AssignmentStatus;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\User;
-use App\Notifications\OrderStatusChangedNotification;
+use App\Services\OrderWorkflow;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
+/**
+ * Espace livreur — étapes 8 à 12 du parcours.
+ */
 class MyOrderController extends Controller
 {
-    public function index(Request $request)
+    public function __construct(private OrderWorkflow $workflow)
     {
-        $status = trim((string) $request->get('status', ''));
+    }
 
-        $orders = Order::query()
-            ->with(['user:id,name', 'assignment'])
-            ->whereHas('assignment', fn($q) => $q->where('courier_id', Auth::id()))
-            ->when($status !== '', fn($q) => $q->where('status', $status))
+    public function index(Request $request): View
+    {
+        $filter = $request->string('filter')->toString() ?: 'all';
+
+        $base = fn () => Order::query()
+            ->whereHas('assignment', fn ($q) => $q->where('courier_id', Auth::id()))
+            ->with(['client:id,name,phone', 'items', 'pharmacy:id,name,area,phone', 'assignment']);
+
+        $orders = $base()
+            ->when($filter === 'new', fn ($q) => $q->withStatus([OrderStatus::COURIER_ASSIGNED]))
+            ->when($filter === 'active', fn ($q) => $q->inDelivery()->withStatus([
+                OrderStatus::TO_PHARMACY, OrderStatus::AT_PHARMACY,
+                OrderStatus::PICKED_UP, OrderStatus::TO_CLIENT,
+            ]))
+            ->when($filter === 'done', fn ($q) => $q->withStatus([OrderStatus::DELIVERED, OrderStatus::RATED]))
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
-        return view('admin.my_orders.index', compact('orders', 'status'));
+        return view('admin.my_orders.index', [
+            'orders' => $orders,
+            'filter' => $filter,
+            'counts' => [
+                'new'    => $base()->withStatus([OrderStatus::COURIER_ASSIGNED])->count(),
+                'active' => $base()->inDelivery()->withStatus([
+                    OrderStatus::TO_PHARMACY, OrderStatus::AT_PHARMACY,
+                    OrderStatus::PICKED_UP, OrderStatus::TO_CLIENT,
+                ])->count(),
+                'done'   => $base()->withStatus([OrderStatus::DELIVERED, OrderStatus::RATED])->count(),
+            ],
+        ]);
     }
 
-    public function show(Order $order)
+    public function show(Order $order): View
     {
-        $order->load(['user:id,name', 'items.medicine:id,name,price', 'assignment']);
+        $this->authorize('view', $order);
 
-        abort_unless(optional($order->assignment)->courier_id === Auth::id(), 403);
+        $order->load([
+            'client:id,name,phone',
+            'items.medicine:id,name,pack,dosage',
+            'pharmacy',
+            'assignment.courier:id,name,phone',
+            'events',
+        ]);
 
         return view('admin.my_orders.show', compact('order'));
     }
 
-    public function accept(Order $order)
+    /** Le livreur accepte : la course démarre vers la pharmacie. */
+    public function accept(Order $order): RedirectResponse
     {
-        $assignment = $order->assignment;
-        abort_unless($assignment && $assignment->courier_id === Auth::id(), 403);
-        abort_unless($assignment->status === AssignmentStatus::ASSIGNED, 403);
+        $this->authorize('courierRespond', $order);
 
-        $assignment->update([
-            'status'       => AssignmentStatus::ACCEPTED,
-            'responded_at' => now(),
+        $this->workflow->advanceDelivery($order, Auth::user());
+
+        return back()->with('success', 'Course acceptée. Direction la pharmacie.');
+    }
+
+    public function refuse(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorize('courierRespond', $order);
+
+        $validated = $request->validate([
+            'note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $order->update(['status' => OrderStatus::ACCEPTED]);
+        $this->workflow->refuseAssignment($order, Auth::user(), $validated['note'] ?? null);
 
-        $managers = User::where('role', User::ROLE_MANAGER)->get();
-        Notification::send($managers, new OrderStatusChangedNotification($order, 'accepted'));
-
-        return back()->with('success', 'Commande acceptée.');
+        return redirect()
+            ->route('courier.my_orders.index')
+            ->with('success', 'Course refusée. Le manager va la réattribuer.');
     }
 
-    public function refuse(Request $request, Order $order)
+    /** Passe à l'étape suivante des cinq du suivi client. */
+    public function advance(Order $order): RedirectResponse
     {
-        $assignment = $order->assignment;
-        abort_unless($assignment && $assignment->courier_id === Auth::id(), 403);
-        abort_unless($assignment->status === AssignmentStatus::ASSIGNED, 403);
+        $this->authorize('courierAdvance', $order);
 
-        $assignment->update([
-            'status'       => AssignmentStatus::REFUSED,
-            'responded_at' => now(),
-        ]);
+        $order = $this->workflow->advanceDelivery($order, Auth::user());
 
-        $order->update(['status' => OrderStatus::PENDING_ASSIGNMENT]);
-
-        $managers = User::where('role', User::ROLE_MANAGER)->get();
-        Notification::send($managers, new OrderStatusChangedNotification($order, 'refused'));
-
-        return back()->with('success', 'Commande refusée.');
+        return back()->with('success', "Étape enregistrée : {$order->status->badge()}. Le client est prévenu.");
     }
 
-    public function startDelivery(Order $order)
+    public function downloadPrescription(Order $order): mixed
     {
-        $assignment = $order->assignment;
-        abort_unless($assignment && $assignment->courier_id === Auth::id(), 403);
-        abort_unless($assignment->status === AssignmentStatus::ACCEPTED, 403);
-
-        $assignment->update(['status' => AssignmentStatus::DELIVERING]);
-        $order->update(['status' => OrderStatus::IN_DELIVERY]);
-
-        $managers = User::where('role', User::ROLE_MANAGER)->get();
-        Notification::send($managers, new OrderStatusChangedNotification($order, 'in_delivery'));
-
-        return back()->with('success', 'Livraison démarrée.');
-    }
-
-    public function markDelivered(Order $order)
-    {
-        $assignment = $order->assignment;
-        abort_unless($assignment && $assignment->courier_id === Auth::id(), 403);
-        abort_unless($assignment->status === AssignmentStatus::DELIVERING, 403);
-
-        $assignment->update(['status' => AssignmentStatus::DELIVERED]);
-        $order->update([
-            'status'       => OrderStatus::DELIVERED,
-            'delivered_at' => now(),
-        ]);
-
-        $managers = User::where('role', User::ROLE_MANAGER)->get();
-        Notification::send($managers, new OrderStatusChangedNotification($order, 'delivered'));
-
-        return back()->with('success', 'Livraison confirmée.');
-    }
-
-    public function downloadPrescription(Order $order)
-    {
-        $assignment = $order->assignment;
-        abort_unless($assignment && $assignment->courier_id === Auth::id(), 403);
+        $this->authorize('view', $order);
         abort_unless($order->has_prescription && $order->prescription_path, 404);
 
         return Storage::disk('local')->download($order->prescription_path);
