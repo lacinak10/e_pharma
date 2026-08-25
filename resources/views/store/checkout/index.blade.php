@@ -1,109 +1,126 @@
 @extends('layouts.store')
 
-@section('title', 'Checkout — E-PHARMA')
+@section('title', 'Finaliser ma commande — ePharma')
 
 @section('content')
 @php
-    $subtotal = collect($cart)->sum(fn($i) => (int)$i['price'] * (int)$i['qty']);
-    $delivery = $subtotal > 0 ? 1500 : 0;
-    $total = $subtotal + $delivery;
+    $subtotal    = collect($cart)->sum(fn ($line) => (int) $line['price'] * (int) $line['qty']);
+    $deliveryFee = 1500;
+    $user        = auth()->user();
 @endphp
 
-<section class="max-w-7xl mx-auto px-4 py-10">
-    <h1 class="text-3xl font-extrabold">Finaliser la commande</h1>
-    <p class="text-gray-600 mt-1">Adresse + paiement + récapitulatif.</p>
+<div class="ep-shell ep-section--tight">
+    <div style="max-width:52ch;margin-bottom:2rem">
+        <h1 class="ep-h2">Finaliser ma commande</h1>
+        <p class="ep-lead" style="margin-top:.75rem">
+            Une fois validée, votre commande part en vérification auprès de nos pharmacies partenaires.
+            Vous saurez en moins de 5 minutes ce qui est disponible.
+        </p>
+    </div>
 
-    <form class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6" method="POST" action="{{ route('store.checkout.store') }}">
+    <form method="POST" action="{{ route('store.checkout.store') }}">
         @csrf
 
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-lg font-extrabold">Livraison</h3>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <x-store.input name="delivery_phone" label="Téléphone" placeholder="Ex : 0505050505" value="{{ old('delivery_phone') }}" />
-                    <x-store.input name="delivery_address" label="Adresse" placeholder="Ex: Cocody Angré, Rue..." value="{{ old('delivery_address') }}" />
-                </div>
-                <div class="mt-4">
-                    <label class="block">
-                        <span class="block text-sm font-semibold text-gray-700 mb-1">Note (optionnel)</span>
-                        <textarea name="notes" rows="3" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent">{{ old('notes') }}</textarea>
-                        @error('notes') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
-                    </label>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-lg font-extrabold">Paiement</h3>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer">
-    <input type="radio" name="payment_method" value="cash" class="mr-2" checked>
-    Espèces
-</label>
-
-<label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer opacity-50 cursor-not-allowed">
-    <input type="radio" name="payment_method" value="momo" class="mr-2" disabled>
-    Mobile Money
-</label>
-
-<label class="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 cursor-pointer opacity-50 cursor-not-allowed">
-    <input type="radio" name="payment_method" value="card" class="mr-2" disabled>
-    Carte
-</label>
-                </div>
-
-                @error('payment_method') <span class="text-sm text-red-600 mt-2 block">{{ $message }}</span> @enderror
-            </div>
-        </div>
-
-        <div class="space-y-6">
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-lg font-extrabold">Récapitulatif</h3>
-
-                <div class="mt-4 space-y-3 text-sm">
-                    @foreach($cart as $i)
-                        <div class="flex justify-between text-gray-700">
-                            <span class="line-clamp-1">{{ $i['name'] }} × {{ (int)$i['qty'] }}</span>
-                            <span class="font-semibold">{{ number_format(((int)$i['price']*(int)$i['qty']), 0, ',', ' ') }} FCFA</span>
+        <div class="ep-split">
+            <div class="ep-stack">
+                <x-ep.card title="Livraison">
+                    <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))">
+                        <div class="ep-field">
+                            <label class="ep-label" for="delivery_address">Adresse de livraison</label>
+                            <input class="ep-input" id="delivery_address" name="delivery_address" required
+                                   minlength="5" maxlength="255"
+                                   value="{{ old('delivery_address', $user->zone ? $user->zone . ', Abidjan' : '') }}"
+                                   placeholder="Cocody Angré, rue des Jardins">
+                            <x-input-error :messages="$errors->get('delivery_address')" class="ep-error" />
                         </div>
-                    @endforeach
 
-                    <div class="border-t border-gray-100 pt-3 space-y-2">
-                        <div class="flex justify-between text-gray-600">
-                            <span>Sous-total</span>
-                            <span class="font-semibold text-gray-900">{{ number_format($subtotal, 0, ',', ' ') }} FCFA</span>
-                        </div>
-                        <div class="flex justify-between text-gray-600">
-                            <span>Livraison</span>
-                            <span class="font-semibold text-gray-900">{{ number_format($delivery, 0, ',', ' ') }} FCFA</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="font-bold text-gray-900">Total</span>
-                            <span class="font-extrabold text-blue-700">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                        <div class="ep-field">
+                            <label class="ep-label" for="delivery_phone">Téléphone</label>
+                            <input class="ep-input ep-mono" id="delivery_phone" name="delivery_phone" required
+                                   value="{{ old('delivery_phone', $user->phone) }}" placeholder="+2250700000000">
+                            <p class="ep-hint">Le livreur vous appellera avant d'arriver.</p>
+                            <x-input-error :messages="$errors->get('delivery_phone')" class="ep-error" />
                         </div>
                     </div>
-                </div>
 
-                <input type="hidden" name="total_amount" value="{{ $total }}" class="mr-2">
-                <input type="hidden" name="subtotal" value="{{ $subtotal }}" class="mr-2">
-                <input type="hidden" name="delivery_fee" value="{{ $delivery }}" class="mr-2">
+                    <div class="ep-field" style="margin-top:1rem">
+                        <label class="ep-label" for="notes">Précisions <span class="ep-hint">(facultatif)</span></label>
+                        <textarea class="ep-textarea" id="notes" name="notes" maxlength="500"
+                                  placeholder="Étage, point de repère, horaire souhaité…">{{ old('notes') }}</textarea>
+                        <x-input-error :messages="$errors->get('notes')" class="ep-error" />
+                    </div>
+                </x-ep.card>
 
+                <x-ep.card title="Paiement à la livraison">
+                    <fieldset style="border:0;padding:0;margin:0">
+                        <legend class="ep-sr-only">Moyen de paiement</legend>
+                        <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:.5rem">
+                            @foreach(['cash' => 'Espèces', 'momo' => 'Mobile Money', 'card' => 'Carte'] as $value => $label)
+                                <label class="ep-choice">
+                                    <input type="radio" name="payment_method" value="{{ $value }}"
+                                           @checked(old('payment_method', 'cash') === $value)>
+                                    {{ $label }}
+                                </label>
+                            @endforeach
+                        </div>
+                        <x-input-error :messages="$errors->get('payment_method')" class="ep-error" />
+                    </fieldset>
 
-
-
-                <div class="mt-6">
-                    <x-store.button type="submit" variant="primary" class="w-full">
-                        <i class="fa-solid fa-check"></i> Confirmer la commande
-                    </x-store.button>
-                    <p class="text-xs text-gray-500 mt-2">
-                        En cliquant, vous confirmez votre commande.
+                    <p class="ep-hint" style="margin-top:1rem">
+                        Vous ne payez qu'à la remise, après confirmation de disponibilité.
                     </p>
-                </div>
+                </x-ep.card>
             </div>
 
-            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 text-sm text-blue-900">
-                <b>Conseil</b> : pour une livraison rapide, ajoute un repère (immeuble, portail, etc.).
+            <div class="ep-stack">
+                <x-ep.card title="Votre commande" flush>
+                    <div style="padding:.25rem 0">
+                        @foreach($cart as $line)
+                            <div class="ep-row ep-row--nowrap" style="gap:.75rem;padding:.625rem 1.125rem">
+                                <span style="flex:1;min-width:0;font-size:.84375rem">
+                                    {{ $line['name'] }}
+                                    <span class="ep-mono ep-small">× {{ $line['qty'] }}</span>
+                                </span>
+                                <span class="ep-mono" style="font-size:.84375rem;white-space:nowrap">
+                                    {{ number_format($line['price'] * $line['qty'], 0, ',', ' ') }} F
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <x-slot:footer>
+                        <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                            <span class="ep-small">Sous-total</span>
+                            <span class="ep-mono ep-small">{{ number_format($subtotal, 0, ',', ' ') }} F</span>
+                        </div>
+                        <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.5rem">
+                            <span class="ep-small">Livraison</span>
+                            <span class="ep-mono ep-small">{{ number_format($deliveryFee, 0, ',', ' ') }} F</span>
+                        </div>
+                        <div class="ep-row ep-row--nowrap"
+                             style="justify-content:space-between;margin-top:.875rem;padding-top:.875rem;border-top:1px solid var(--ep-rule)">
+                            <strong style="font-size:.9375rem">Total</strong>
+                            <strong class="ep-mono" style="font-size:1.125rem">{{ number_format($subtotal + $deliveryFee, 0, ',', ' ') }} F</strong>
+                        </div>
+
+                        <button type="submit" class="ep-btn ep-btn--primary ep-btn--block" style="margin-top:1.25rem">
+                            Confirmer ma commande
+                        </button>
+                        <a href="{{ route('store.cart.index') }}" class="ep-btn ep-btn--ghost ep-btn--block" style="margin-top:.5rem">
+                            Modifier mon panier
+                        </a>
+                    </x-slot:footer>
+                </x-ep.card>
+
+                <x-ep.card>
+                    <p class="ep-eyebrow ep-eyebrow--amber">Ce qui suit votre confirmation</p>
+                    <p class="ep-small" style="margin:.75rem 0 0">
+                        « Votre commande a été prise en charge et est en attente de validation par le manager. »
+                        Puis la vérification démarre : résultat annoncé en moins de 5 minutes.
+                    </p>
+                </x-ep.card>
             </div>
         </div>
     </form>
-</section>
+</div>
 @endsection

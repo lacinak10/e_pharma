@@ -1,49 +1,77 @@
 @extends('layouts.store')
 
-@section('title', 'Catalogue — E-PHARMA')
+@section('title', ($q ? "« {$q} » — " : '') . 'Médicaments — ePharma')
 
 @section('content')
-<section class="max-w-7xl mx-auto px-4 py-10">
-    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-            <h1 class="text-3xl font-extrabold">Catalogue</h1>
-            <p class="text-gray-600 mt-1">Recherche rapide + filtres.</p>
+<div class="ep-shell ep-section--tight">
+
+    <div style="margin-bottom:1.75rem">
+        <h1 class="ep-h2">
+            @if($q) Résultats pour « {{ $q }} » @else Tous les médicaments @endif
+        </h1>
+        <p class="ep-small" style="margin-top:.5rem">
+            {{ $medicines->total() }} médicament{{ $medicines->total() > 1 ? 's' : '' }} ·
+            disponibilité confirmée auprès de nos partenaires avant chaque livraison
+        </p>
+    </div>
+
+    <div class="ep-split">
+        {{-- Filtres --}}
+        <aside class="ep-stack" style="order:2">
+            <x-ep.card title="Catégories" flush>
+                <nav style="padding:.5rem 0">
+                    <a href="{{ route('store.medicines.index', array_filter(['q' => $q])) }}"
+                       class="ep-nav__link" style="color:var(--ep-text-3);border-left-color:{{ $category ? 'transparent' : 'var(--ep-green)' }}">
+                        <span class="ep-nav__label">Toutes les catégories</span>
+                    </a>
+                    @foreach($categories as $cat)
+                        <a href="{{ route('store.medicines.index', array_filter(['q' => $q, 'category' => $cat->slug])) }}"
+                           class="ep-nav__link"
+                           style="color:{{ $category === $cat->slug ? 'var(--ep-green-dark)' : 'var(--ep-text-3)' }};
+                                  font-weight:{{ $category === $cat->slug ? 650 : 500 }};
+                                  border-left-color:{{ $category === $cat->slug ? 'var(--ep-green)' : 'transparent' }}">
+                            <span class="ep-nav__label">{{ $cat->name }}</span>
+                        </a>
+                    @endforeach
+                </nav>
+            </x-ep.card>
+
+            <x-ep.card>
+                <p class="ep-eyebrow" style="color:var(--ep-red)">Sur ordonnance</p>
+                <p class="ep-small" style="margin:.75rem 0 1rem">
+                    Certains médicaments exigent une ordonnance téléversée au moment de la commande.
+                </p>
+                <a href="{{ route('store.prescriptions.create') }}" class="ep-btn ep-btn--ghost ep-btn--block">
+                    Envoyer mon ordonnance
+                </a>
+            </x-ep.card>
+        </aside>
+
+        {{-- Résultats --}}
+        <div style="order:1">
+            @if($medicines->isEmpty())
+                <x-ep.card>
+                    <x-ep.empty
+                        title="Aucun médicament ne correspond."
+                        text="Essayez un autre nom, une molécule, ou envoyez-nous directement votre ordonnance.">
+                        <x-slot:actions>
+                            <a href="{{ route('store.medicines.index') }}" class="ep-btn ep-btn--ghost">Voir tout le catalogue</a>
+                            <a href="{{ route('store.prescriptions.create') }}" class="ep-btn ep-btn--primary">Envoyer une ordonnance</a>
+                        </x-slot:actions>
+                    </x-ep.empty>
+                </x-ep.card>
+            @else
+                <div class="ep-grid ep-grid--cards">
+                    @foreach($medicines as $medicine)
+                        <x-ep.product-card :medicine="$medicine" />
+                    @endforeach
+                </div>
+
+                @if($medicines->hasPages())
+                    <div style="margin-top:2rem">{{ $medicines->links() }}</div>
+                @endif
+            @endif
         </div>
-
-        <form class="w-full md:w-auto flex flex-col sm:flex-row gap-3" method="GET" action="{{ route('store.medicines.index') }}">
-            <div class="relative flex-1 min-w-[260px]">
-                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <input
-                    name="q"
-                    value="{{ $q }}"
-                    placeholder="Rechercher un médicament..."
-                    class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                >
-            </div>
-
-            <select name="category" class="py-3 rounded-2xl border border-gray-200 bg-white px-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent">
-                <option value="">Toutes catégories</option>
-                @foreach($categories as $c)
-                    <option value="{{ $c->slug }}" @selected($category === $c->slug)>{{ $c->name }}</option>
-                @endforeach
-            </select>
-
-            <x-store.button type="submit" variant="primary">
-                <i class="fa-solid fa-filter"></i> Filtrer
-            </x-store.button>
-        </form>
     </div>
-
-    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        @forelse($medicines as $medicine)
-            <x-store.product-card :medicine="$medicine" />
-        @empty
-            <x-store.empty title="Aucun résultat" subtitle="Essaie un autre mot-clé ou une autre catégorie." />
-        @endforelse
-    </div>
-
-    <div class="mt-8">
-        {{ $medicines->links() }}
-    </div>
-</section>
+</div>
 @endsection

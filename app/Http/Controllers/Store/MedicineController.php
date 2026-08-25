@@ -20,7 +20,8 @@ class MedicineController extends Controller
             ->get(['id','name','slug']);
 
         $medicines = Medicine::query()
-            ->where('is_active', true)
+            ->active()
+            ->withAvailabilitySignal()
             ->with('category')
             ->when($q !== '', fn ($query) => $query->where('name', 'like', "%{$q}%"))
             ->when($category, function ($query) use ($category) {
@@ -38,9 +39,12 @@ class MedicineController extends Controller
         abort_unless($medicine->is_active, 404);
 
         $medicine->load('category');
+        // Recharge la fiche avec les indicateurs de disponibilité constatée.
+        $medicine = Medicine::withAvailabilitySignal()->with('category')->findOrFail($medicine->id);
 
         $related = Medicine::query()
-            ->where('is_active', true)
+            ->active()
+            ->withAvailabilitySignal()
             ->where('category_id', $medicine->category_id)
             ->where('id', '!=', $medicine->id)
             ->limit(4)

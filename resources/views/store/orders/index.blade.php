@@ -1,67 +1,58 @@
 @extends('layouts.store')
 
-@section('title', 'Mes commandes — E-PHARMA')
+@section('title', 'Mes commandes — ePharma')
 
 @section('content')
-<section class="max-w-7xl mx-auto px-4 py-10">
-    <div class="flex items-end justify-between gap-4">
-        <div>
-            <h1 class="text-3xl font-extrabold">Mes commandes</h1>
-            <p class="text-gray-600 mt-1">Suivez l’évolution en temps réel.</p>
-        </div>
-        <a href="{{ route('store.medicines.index') }}" class="text-blue-700 font-semibold hover:underline">Commander →</a>
-    </div>
+<div class="ep-shell ep-section--tight">
+    <h1 class="ep-h2" style="margin-bottom:1.5rem">Mes commandes</h1>
 
-    <div class="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                    <tr>
-                        <th class="text-left px-6 py-4">Commande</th>
-                        <th class="text-left px-6 py-4">Date</th>
-                        <th class="text-left px-6 py-4">Total</th>
-                        <th class="text-left px-6 py-4">Statut</th>
-                        <th class="text-right px-6 py-4">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($orders as $order)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 font-bold">
-                                #{{ $order->id }}
-                                @if($order->has_prescription)
-                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-                                        <i class="fa-solid fa-file-medical mr-1 text-xs"></i>Ordonnance
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $order->created_at->format('d/m/Y H:i') }}</td>
-                            <td class="px-6 py-4 font-extrabold text-gray-900">
-                                {{ number_format((int)$order->total_amount, 0, ',', ' ') }} FCFA
-                            </td>
-                            <td class="px-6 py-4">
-                                <x-store.order-status :status="$order->status->value" />
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <a href="{{ route('store.orders.show', $order) }}" class="text-blue-700 font-semibold hover:underline">
-                                    Voir →
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="p-10">
-                                <x-store.empty title="Aucune commande" subtitle="Vos commandes apparaîtront ici." />
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+    @forelse($orders as $order)
+        <a href="{{ route('store.orders.show', $order) }}" class="ep-card"
+           style="display:block;margin-bottom:.875rem;padding:1.125rem;color:inherit;text-decoration:none">
+            <div class="ep-row ep-row--nowrap" style="justify-content:space-between;gap:.75rem">
+                <div style="min-width:0">
+                    <p class="ep-mono" style="font-size:.8125rem;color:var(--ep-green);margin:0">{{ $order->reference }}</p>
+                    <p style="font-size:.9375rem;font-weight:650;margin:.25rem 0 0">
+                        {{ $order->has_prescription ? 'Commande sur ordonnance' : $order->items_summary }}
+                    </p>
+                    <p class="ep-small" style="margin:.25rem 0 0">
+                        {{ $order->created_at->locale('fr')->isoFormat('D MMM YYYY · HH:mm') }}
+                    </p>
+                </div>
+                <div style="text-align:right;flex:none">
+                    <x-ep.badge :status="$order->status" />
+                    <p class="ep-mono" style="font-size:.9375rem;font-weight:600;margin:.5rem 0 0">
+                        {{ number_format($order->total_amount, 0, ',', ' ') }} F
+                    </p>
+                </div>
+            </div>
 
-        <div class="p-4">
-            {{ $orders->links() }}
-        </div>
-    </div>
-</section>
+            @if($order->status === \App\Enums\OrderStatus::CHECKING)
+                <p class="ep-small" style="margin:.75rem 0 0;color:var(--ep-amber)"
+                   data-ep-chrono data-deadline="{{ $order->check_deadline_at?->toIso8601String() }}"
+                   data-prefix="Résultat de disponibilité dans ">
+                    <span data-ep-chrono-value-inline>Résultat de disponibilité dans {{ $order->check_clock }}</span>
+                </p>
+            @elseif($order->awaitsReview())
+                <p class="ep-small" style="margin:.75rem 0 0;color:var(--ep-green)">
+                    Notez votre livreur →
+                </p>
+            @endif
+        </a>
+    @empty
+        <x-ep.card>
+            <x-ep.empty title="Rien en cours."
+                        text="Cherchez un médicament ou envoyez une ordonnance.">
+                <x-slot:actions>
+                    <a href="{{ route('store.medicines.index') }}" class="ep-btn ep-btn--primary">Voir les médicaments</a>
+                    <a href="{{ route('store.prescriptions.create') }}" class="ep-btn ep-btn--ghost">Envoyer une ordonnance</a>
+                </x-slot:actions>
+            </x-ep.empty>
+        </x-ep.card>
+    @endforelse
+
+    @if($orders->hasPages())
+        <div style="margin-top:1.5rem">{{ $orders->links() }}</div>
+    @endif
+</div>
 @endsection

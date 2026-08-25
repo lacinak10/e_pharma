@@ -1,116 +1,177 @@
 @extends('layouts.store')
 
-@section('title', 'Commande #'.$order->id.' — E-PHARMA')
+@section('title', 'Commande ' . $order->reference . ' — ePharma')
 
 @section('content')
-<section class="max-w-7xl mx-auto px-4 py-10">
-    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+@php
+    use App\Enums\OrderStatus;
+    $status = $order->status;
+    $courier = $order->assignment?->courier;
+@endphp
+
+<div class="ep-shell ep-section--tight" @if($status === OrderStatus::CHECKING) data-ep-live-refresh="60" @endif>
+
+    <nav class="ep-small" style="margin-bottom:1rem">
+        <a href="{{ route('store.orders.index') }}">← Mes commandes</a>
+    </nav>
+
+    <div class="ep-row" style="justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem">
         <div>
-            <a href="{{ route('store.orders.index') }}" class="text-sm text-blue-700 font-semibold hover:underline">← Mes commandes</a>
-            <h1 class="mt-2 text-3xl font-extrabold">Commande #{{ $order->id }}</h1>
-            <p class="text-gray-600 mt-1">{{ $order->created_at->format('d/m/Y H:i') }}</p>
+            <h1 class="ep-h2">Commande {{ $order->reference }}</h1>
+            <p class="ep-small" style="margin-top:.375rem">
+                Passée le {{ $order->created_at->locale('fr')->isoFormat('D MMMM YYYY à HH:mm') }}
+            </p>
         </div>
-
-        <div class="flex items-center gap-3">
-            <x-store.order-status :status="$order->status->value" />
-
-            @if(in_array($order->status, [\App\Enums\OrderStatus::PENDING_ASSIGNMENT, \App\Enums\OrderStatus::ASSIGNED, \App\Enums\OrderStatus::REFUSED], true))
-                <form method="POST" action="{{ route('store.orders.cancel', $order) }}">
-                    @csrf
-                    <x-store.button variant="danger" type="submit">
-                        <i class="fa-solid fa-ban"></i> Annuler
-                    </x-store.button>
-                </form>
-            @endif
-        </div>
+        <x-ep.badge :status="$status" />
     </div>
 
-    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 space-y-6">
-            <x-store.order-timeline :status="$order->status->value" />
+    <div class="ep-split">
+        <div class="ep-stack">
 
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-lg font-extrabold">Articles</h3>
+            {{-- Étape 3 : le compte à rebours annoncé au client --}}
+            @if($status === OrderStatus::CHECKING)
+                <x-ep.chrono :order="$order" caption="restantes avant le résultat de disponibilité" />
+                <p class="ep-body" style="margin:0">
+                    Vos médicaments sont en cours de vérification auprès de nos pharmacies partenaires
+                    afin de confirmer leur disponibilité. Vous serez informé du résultat dans moins de 5 minutes.
+                </p>
 
-                <div class="mt-4 divide-y divide-gray-100">
-                    @foreach($order->items as $it)
-                        <div class="py-4 flex items-center justify-between">
-                            <div>
-                                <div class="font-bold text-gray-900">{{ $it->medicine_name ?? optional($it->medicine)->name }}</div>
-                                <div class="text-sm text-gray-600 mt-1">
-                                    {{ number_format((int)$it->unit_price, 0, ',', ' ') }} FCFA × {{ (int)$it->quantity }}
-                                </div>
-                            </div>
-                            <div class="font-extrabold text-gray-900">
-                                {{ number_format((int)$it->line_total, 0, ',', ' ') }} FCFA
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
+            @elseif($status === OrderStatus::PENDING_VALIDATION)
+                <x-ep.card>
+                    <p class="ep-eyebrow ep-eyebrow--amber">En attente de validation</p>
+                    <p class="ep-body" style="margin:.75rem 0 0">
+                        Votre commande a été prise en charge et est en attente de validation par le manager.
+                    </p>
+                </x-ep.card>
+
+            @elseif($status === OrderStatus::UNAVAILABLE)
+                <x-ep.card>
+                    <p class="ep-eyebrow" style="color:var(--ep-red)">Indisponible</p>
+                    <p class="ep-body" style="margin:.75rem 0 0">
+                        Vos médicaments sont introuvables chez nos partenaires pour le moment.
+                        Consultez les alternatives du catalogue ou réessayez plus tard.
+                    </p>
+                    <a href="{{ route('store.medicines.index') }}" class="ep-btn ep-btn--ghost" style="margin-top:1rem">
+                        Voir les alternatives
+                    </a>
+                </x-ep.card>
+            @endif
+
+            {{-- Le livreur assigné : nom, numéro, délai --}}
+            @if($courier && $status->isCourierPhase())
+                <x-ep.card title="Votre livreur">
+                    <x-ep.courier-card :courier="$courier" :eta="$order->eta_minutes" />
+                    @if($order->delivery_code)
+                        <p class="ep-small" style="margin:1rem 0 0">
+                            Code de confirmation à donner au livreur :
+                            <strong class="ep-mono" style="font-size:1rem">{{ $order->delivery_code }}</strong>
+                        </p>
+                    @endif
+                </x-ep.card>
+            @endif
+
+            {{-- Le suivi : 5 étapes ou avancement du dossier --}}
+            <x-store.order-timeline :order="$order" />
+
+            {{-- Étape 13 : notation du livreur --}}
+            @if($order->awaitsReview() && $courier)
+                <x-ep.card title="Notez votre livreur">
+                    <x-ep.rating-form :order="$order" />
+                </x-ep.card>
+            @elseif($order->review)
+                <x-ep.card title="Votre avis">
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-stars" style="font-size:1rem;letter-spacing:1.5px">{{ $order->review->stars }}</span>
+                        <time class="ep-mono ep-small">{{ $order->review->created_at->locale('fr')->isoFormat('D MMM YYYY') }}</time>
+                    </div>
+                    @if($order->review->comment)
+                        <p class="ep-body" style="margin:.875rem 0 0">« {{ $order->review->comment }} »</p>
+                    @endif
+                </x-ep.card>
+            @endif
         </div>
 
-        <div class="space-y-6">
-            @if($order->has_prescription)
-            <div class="bg-purple-50 border border-purple-200 rounded-2xl p-6">
-                <h3 class="text-lg font-extrabold text-purple-900 flex items-center gap-2">
-                    <i class="fa-solid fa-file-medical text-purple-600"></i> Ordonnance
-                </h3>
-                <p class="mt-2 text-sm text-purple-800">Ordonnance jointe à cette commande.</p>
+        <div class="ep-stack">
+            {{-- Contenu de la commande --}}
+            <x-ep.card title="Votre commande" flush>
+                <div style="padding:.5rem 0">
+                    @forelse($order->items as $item)
+                        <div class="ep-row ep-row--nowrap" style="gap:.75rem;padding:.75rem 1.125rem;align-items:flex-start">
+                            <div style="flex:1;min-width:0">
+                                <p style="font-size:.84375rem;font-weight:650;margin:0">{{ $item->medicine_name }}</p>
+                                <p class="ep-mono ep-small" style="margin:.125rem 0 0">
+                                    {{ $item->quantity }} × {{ number_format($item->unit_price, 0, ',', ' ') }} F
+                                </p>
+                                @if($item->availability->isSettled())
+                                    <span class="ep-badge" style="margin-top:.375rem;background:{{ $item->availability->tint() }};color:{{ $item->availability->color() }}">
+                                        {{ $item->availability->label() }}
+                                    </span>
+                                @endif
+                                @if($item->substitute_name)
+                                    <p class="ep-small" style="margin:.25rem 0 0">Substitut proposé : {{ $item->substitute_name }}</p>
+                                @endif
+                            </div>
+                            <span class="ep-mono" style="font-size:.84375rem;white-space:nowrap">
+                                {{ number_format($item->line_total, 0, ',', ' ') }} F
+                            </span>
+                        </div>
+                    @empty
+                        <p class="ep-small" style="padding:.75rem 1.125rem;margin:0">
+                            Commande sur ordonnance : le contenu sera établi après lecture par le manager.
+                        </p>
+                    @endforelse
+                </div>
 
-                @if($order->total_amount <= 1500 && (int)$order->subtotal === 0)
-                    <div class="mt-3 text-xs text-purple-700 bg-purple-100 rounded-xl px-3 py-2">
-                        Le montant de vos médicaments sera ajouté après traitement de l'ordonnance.
+                <x-slot:footer>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
+                        <span class="ep-small">Sous-total</span>
+                        <span class="ep-mono ep-small">{{ number_format($order->subtotal, 0, ',', ' ') }} F</span>
                     </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
+                        <span class="ep-small">Livraison</span>
+                        <span class="ep-mono ep-small">{{ number_format($order->delivery_fee, 0, ',', ' ') }} F</span>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.625rem;padding-top:.625rem;border-top:1px solid var(--ep-rule)">
+                        <strong style="font-size:.9375rem">Total</strong>
+                        <strong class="ep-mono" style="font-size:1.0625rem">{{ number_format($order->total_amount, 0, ',', ' ') }} F</strong>
+                    </div>
+                    <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
+                        <span class="ep-small">Paiement</span>
+                        <span class="ep-small">{{ $order->payment_label }}</span>
+                    </div>
+                </x-slot:footer>
+            </x-ep.card>
+
+            {{-- Ordonnance --}}
+            @if($order->has_prescription)
+                <x-ep.prescription-viewer
+                    :order="$order"
+                    :download-url="$order->prescription_path ? route('store.prescriptions.download', $order) : null" />
+            @endif
+
+            {{-- Livraison --}}
+            <x-ep.card title="Livraison">
+                <p style="font-size:.875rem;margin:0">{{ $order->delivery_address }}</p>
+                @if($order->delivery_phone)
+                    <p class="ep-mono ep-small" style="margin:.25rem 0 0">{{ $order->delivery_phone }}</p>
+                @endif
+                @if($order->pharmacy)
+                    <p class="ep-small" style="margin:.75rem 0 0">
+                        Retrait chez <strong>{{ $order->pharmacy->name }}</strong> — {{ $order->pharmacy->area }}
+                    </p>
                 @endif
 
-                <a href="{{ route('store.prescriptions.download', $order) }}"
-                   class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition">
-                    <i class="fa-solid fa-download"></i> Télécharger l'ordonnance
-                </a>
-            </div>
-            @endif
-
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-lg font-extrabold">Livraison</h3>
-                <div class="mt-3 text-sm text-gray-700 space-y-2">
-                    <div><span class="text-gray-500">Téléphone:</span> <b>{{ $order->delivery_phone }}</b></div>
-                    <div><span class="text-gray-500">Adresse:</span> <b>{{ $order->delivery_address }}</b></div>
-                    @if($order->notes)
-                        <div><span class="text-gray-500">Note:</span> <b>{{ $order->notes }}</b></div>
-                    @endif
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 class="text-lg font-extrabold">Paiement</h3>
-                <div class="mt-3 text-sm text-gray-700">
-                    @php
-                        $pm = match($order->payment_method) {
-                            'momo' => 'Mobile Money',
-                            'card' => 'Carte',
-                            default => 'Espèces'
-                        };
-                    @endphp
-                    Méthode: <b>{{ $pm }}</b>
-                </div>
-
-                <div class="mt-4 border-t border-gray-100 pt-4 space-y-2 text-sm">
-                    <div class="flex justify-between text-gray-600">
-                        <span>Sous-total</span>
-                        <span class="font-semibold text-gray-900">{{ number_format((int)$order->subtotal, 0, ',', ' ') }} FCFA</span>
-                    </div>
-                    <div class="flex justify-between text-gray-600">
-                        <span>Livraison</span>
-                        <span class="font-semibold text-gray-900">{{ number_format((int)$order->delivery_fee, 0, ',', ' ') }} FCFA</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="font-bold text-gray-900">Total</span>
-                        <span class="font-extrabold text-blue-700">{{ number_format((int)$order->total_amount, 0, ',', ' ') }} FCFA</span>
-                    </div>
-                </div>
-            </div>
+                @can('cancel', $order)
+                    <form method="POST" action="{{ route('store.orders.cancel', $order) }}" style="margin-top:1rem">
+                        @csrf
+                        <label class="ep-sr-only" for="cancel-reason">Motif</label>
+                        <input class="ep-input" id="cancel-reason" name="reason" maxlength="255"
+                               placeholder="Motif (facultatif)" style="margin-bottom:.5rem">
+                        <button type="submit" class="ep-btn ep-btn--danger-soft ep-btn--block">Annuler ma commande</button>
+                    </form>
+                @endcan
+            </x-ep.card>
         </div>
     </div>
-</section>
+</div>
 @endsection

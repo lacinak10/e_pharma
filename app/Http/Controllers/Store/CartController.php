@@ -30,21 +30,14 @@ class CartController extends Controller
         $currentQty = (int) ($cart[$medicine->id]['qty'] ?? 0);
         $newQty = $currentQty + $qty;
 
-        if ($medicine->stock <= 0) {
-            return back()->with('error', "Ce médicament est épuisé.");
-        }
-
-        if ($newQty > $medicine->stock) {
-            return back()->with('error', "Stock insuffisant. Disponible: {$medicine->stock}.");
-        }
-
+        // Aucun contrôle de stock : la disponibilité réelle est établie après
+        // la commande, par téléphone, auprès des pharmacies partenaires.
         $cart[$medicine->id] = [
             'id' => $medicine->id,
             'name' => $medicine->name,
             'price' => (int) $medicine->price,
             'image_url' => $medicine->image_url,
-            'status' => $medicine->status,
-            'stock' => (int) $medicine->stock,
+            'requires_prescription' => (bool) $medicine->requires_prescription,
             'qty' => $newQty,
         ];
 
@@ -66,17 +59,7 @@ class CartController extends Controller
 
         $qty = (int) $request->qty;
 
-        if ($medicine->stock <= 0) {
-            return back()->with('error', "Ce médicament est épuisé.");
-        }
-
-        if ($qty > $medicine->stock) {
-            return back()->with('error', "Stock insuffisant. Disponible: {$medicine->stock}.");
-        }
-
         $cart[$medicine->id]['qty'] = $qty;
-        $cart[$medicine->id]['stock'] = (int) $medicine->stock;
-        $cart[$medicine->id]['status'] = $medicine->status;
 
         session(['cart' => $cart]);
 

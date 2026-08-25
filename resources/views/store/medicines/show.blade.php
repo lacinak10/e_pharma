@@ -1,153 +1,112 @@
 @extends('layouts.store')
 
-@section('title', $medicine->name . ' — E-PHARMA')
+@section('title', $medicine->name . ' — ePharma')
+@section('description', $medicine->indication ?: $medicine->description)
 
 @section('content')
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12">
-        <!-- Colonne image + galerie (prévue pour futur) -->
-        <div class="space-y-6">
-            <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="aspect-[4/3] md:aspect-[5/4] lg:aspect-square bg-gray-50 flex items-center justify-center p-8">
-                    @if($medicine->image_url)
-                        <img
-                            src="{{ $medicine->image_src }}"
-                            alt="{{ $medicine->name }}"
-                            class="max-h-full w-auto object-contain transition-transform duration-700 hover:scale-105"
-                            loading="eager"
-                        >
-                    @else
-                        <div class="text-center">
-                            <i class="fa-solid fa-pills text-8xl text-gray-200"></i>
-                            <p class="mt-4 text-sm text-gray-400">Aucune image disponible</p>
-                        </div>
+<div class="ep-shell ep-section--tight">
+
+    <nav class="ep-small" style="margin-bottom:1.25rem">
+        <a href="{{ route('store.medicines.index') }}">Médicaments</a>
+        @if($medicine->category)
+            <span aria-hidden="true"> · </span>
+            <a href="{{ route('store.medicines.index', ['category' => $medicine->category->slug]) }}">{{ $medicine->category->name }}</a>
+        @endif
+    </nav>
+
+    <div class="ep-split">
+        <div class="ep-stack">
+            <div class="ep-grid ep-grid--2" style="gap:2rem;align-items:start">
+                <div class="ep-card" style="position:relative;padding:1.5rem">
+                    <img src="{{ $medicine->image_src }}" alt="{{ $medicine->name }}"
+                         style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:var(--ep-radius-sm)">
+                    @if($medicine->requires_prescription)
+                        <span class="ep-badge ep-badge--rx" style="position:absolute;top:1rem;left:1rem">Sur ordonnance</span>
                     @endif
                 </div>
 
-                <!-- Badge statut en overlay (plus visible) -->
-                <div class="absolute top-6 right-6 z-10">
-                    @php
-                        $statusConfig = match($medicine->status ?? 'En stock') {
-                            'Épuisé'      => ['variant' => 'red',    'text' => 'Épuisé'],
-                            'Stock faible' => ['variant' => 'yellow', 'text' => 'Stock faible'],
-                            default        => ['variant' => 'green',  'text' => 'En stock'],
-                        };
-                    @endphp
-                    <x-store.badge :variant="$statusConfig['variant']" size="lg">
-                        {{ $statusConfig['text'] }}
-                    </x-store.badge>
-                </div>
-            </div>
+                <div>
+                    <h1 class="ep-h3">{{ $medicine->name }}</h1>
 
-            <!-- Miniatures futures (placeholder) -->
-            <div class="hidden lg:flex gap-4">
-                <div class="w-20 h-20 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center cursor-pointer hover:border-blue-500 transition">
-                    <i class="fa-solid fa-image text-gray-400"></i>
-                </div>
-                <!-- Ajouter d'autres miniatures quand plusieurs images seront disponibles -->
-            </div>
-        </div>
-
-        <!-- Colonne informations -->
-        <div class="space-y-8">
-            <div>
-                <a href="{{ route('store.medicines.index') }}"
-                   class="inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:text-blue-800 transition">
-                    <i class="fa-solid fa-arrow-left text-xs"></i>
-                    Retour aux médicaments
-                </a>
-
-                <h1 class="mt-4 text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
-                    {{ $medicine->name }}
-                </h1>
-
-                <div class="mt-3 flex flex-wrap items-center gap-4">
-                    @if($medicine->category?->name)
-                        <span class="text-base text-gray-600">
-                            {{ $medicine->category->name }}
-                        </span>
+                    @if($medicine->indication)
+                        <p class="ep-body" style="margin-top:.625rem">{{ $medicine->indication }}</p>
                     @endif
 
-                    <span class="text-sm text-gray-500">
-                        Stock :
-                        <span class="{{ $medicine->stock <= 5 ? 'text-red-600 font-medium' : 'text-gray-700' }}">
-                            {{ number_format($medicine->stock, 0, ',', ' ') }}
+                    <p class="ep-mono ep-small" style="margin-top:.75rem">{{ $medicine->pack_label }}</p>
+
+                    @php $signal = $medicine->availabilitySignal(); @endphp
+                    <p style="display:flex;align-items:center;gap:.5rem;margin-top:1rem;font-size:.875rem;font-weight:600;color:{{ $signal['color'] }}">
+                        <span style="width:8px;height:8px;border-radius:50%;background:currentColor"></span>
+                        {{ $signal['label'] }}
+                    </p>
+                    <p class="ep-hint" style="margin:.375rem 0 0;max-width:44ch">
+                        Constat des {{ \App\Models\Medicine::SIGNAL_WINDOW_DAYS }} derniers jours. La disponibilité
+                        réelle est confirmée par téléphone après votre commande.
+                    </p>
+
+                    <p style="margin:1.25rem 0 1.5rem">
+                        <span class="ep-hint" style="display:block">Prix indicatif</span>
+                        <span class="ep-mono" style="font-size:1.75rem;font-weight:600">
+                            {{ number_format($medicine->price, 0, ',', ' ') }} F
                         </span>
-                    </span>
+                    </p>
+
+                    <form method="POST" action="{{ route('store.cart.add', $medicine) }}" class="ep-row" style="gap:.5rem">
+                        @csrf
+                        <label class="ep-sr-only" for="qty">Quantité</label>
+                        <input class="ep-input ep-mono" id="qty" type="number" name="qty" value="1"
+                               min="1" max="99" style="width:88px">
+                        <button type="submit" class="ep-btn ep-btn--primary" style="flex:1;min-width:150px">
+                            Ajouter au panier
+                        </button>
+                    </form>
+
+                    @if($medicine->requires_prescription)
+                        <p class="ep-flash ep-flash--error" style="margin-top:1.25rem">
+                            Ce médicament ne peut être délivré que sur présentation d'une ordonnance.
+                            <a href="{{ route('store.prescriptions.create') }}">Téléverser mon ordonnance</a>
+                        </p>
+                    @endif
                 </div>
             </div>
 
-            <!-- Prix & Ajout panier -->
-            <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-7">
-                <div class="flex items-baseline gap-3">
-                    <span class="text-4xl md:text-5xl font-extrabold text-blue-700">
-                        {{ number_format((int) $medicine->price, 0, ',', ' ') }}
-                    </span>
-                    <span class="text-2xl font-bold text-blue-700">FCFA</span>
-                </div>
+            @if($medicine->description)
+                <x-ep.card title="Description">
+                    <p class="ep-body" style="margin:0">{{ $medicine->description }}</p>
+                </x-ep.card>
+            @endif
 
-                <form method="POST" action="{{ route('store.cart.add', $medicine) }}" class="mt-8">
-                    @csrf
-
-                    <div class="flex flex-col sm:flex-row gap-4 items-end">
-                        <x-store.input
-                            label="Quantité"
-                            name="qty"
-                            type="number"
-                            min="1"
-                            max="{{ min(99, max(1, $medicine->stock)) }}"
-                            value="1"
-                            class="sm:w-32"
-                            :disabled="$medicine->stock <= 0"
-                        />
-
-                        <x-store.button
-                            type="submit"
-                            class="w-full sm:w-auto min-w-[180px] justify-center gap-2"
-                            :variant="$medicine->stock <= 0 ? 'outline' : 'primary'"
-                            :disabled="$medicine->stock <= 0"
-                        >
-                            <i class="fa-solid fa-cart-plus"></i>
-                            {{ $medicine->stock <= 0 ? 'Indisponible' : 'Ajouter au panier' }}
-                        </x-store.button>
+            @if($related->isNotEmpty())
+                <section>
+                    <h2 class="ep-h4" style="margin-bottom:1rem">Dans la même catégorie</h2>
+                    <div class="ep-grid ep-grid--cards">
+                        @foreach($related as $item)
+                            <x-ep.product-card :medicine="$item" />
+                        @endforeach
                     </div>
-                </form>
-            </div>
-
-            <!-- Description -->
-            <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-7">
-                <h3 class="text-xl font-bold text-gray-900">Description</h3>
-                <div class="mt-4 prose prose-sm sm:prose text-gray-600 max-w-none">
-                    {!! nl2br(e($medicine->description ?: "Aucune description détaillée disponible pour le moment.")) !!}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Produits similaires -->
-    <div class="mt-16 lg:mt-20">
-        <div class="flex items-center justify-between">
-            <h2 class="text-2xl font-bold text-gray-900">Produits similaires</h2>
-            @if($medicine->category?->slug)
-                <a href="{{ route('store.medicines.index', ['category' => $medicine->category->slug]) }}"
-                   class="text-sm font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1 transition">
-                    Voir toute la catégorie →
-                </a>
+                </section>
             @endif
         </div>
 
-        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            @forelse($related as $relatedMedicine)
-                <x-store.product-card :medicine="$relatedMedicine" />
-            @empty
-                <div class="col-span-full">
-                    <x-store.empty
-                        title="Aucun produit similaire trouvé"
-                        subtitle="Découvrez d'autres catégories !"
-                    />
-                </div>
-            @endforelse
+        <div class="ep-stack">
+            <x-ep.card title="La disponibilité, avant le déplacement">
+                <p class="ep-small" style="margin:0 0 1rem">
+                    ePharma ne détient aucun stock : nous ne pouvons donc pas vous promettre
+                    qu'un médicament est en rayon. Après votre commande, un manager appelle nos
+                    pharmacies partenaires une par une et vous donne le résultat
+                    <strong>en moins de 5 minutes</strong> — avant tout déplacement.
+                </p>
+                <a href="{{ route('store.how') }}" class="ep-btn ep-btn--ghost ep-btn--block">Comment ça marche</a>
+            </x-ep.card>
+
+            <x-ep.card title="Conseil du pharmacien">
+                <p class="ep-small" style="margin:0">
+                    Ne jamais associer deux médicaments contenant la même molécule sans avis.
+                    En cas de doute sur un dosage, appelez-nous au
+                    <a href="tel:+2252722000000" class="ep-mono">+225 27 22 00 00 00</a>.
+                </p>
+            </x-ep.card>
         </div>
     </div>
-</section>
+</div>
 @endsection

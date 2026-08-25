@@ -2,52 +2,55 @@
 
 namespace App\Http\Controllers\Store;
 
-use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Services\OrderService;
+use App\Services\OrderWorkflow;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class OrderController extends Controller
 {
-    public function __construct(private OrderService $orderService)
+    public function __construct(private OrderWorkflow $workflow)
     {
     }
 
-    public function index()
+    public function index(): View
     {
         $orders = Order::query()
             ->where('user_id', auth()->id())
+            ->with(['items', 'assignment.courier:id,name,phone', 'review'])
             ->latest()
             ->paginate(10);
 
         return view('store.orders.index', compact('orders'));
     }
 
-    public function show(Order $order)
+    public function show(Order $order): View
     {
         $this->authorize('view', $order);
 
-        $order->load(['items.medicine', 'assignment.courier']);
+        $order->load([
+            'items.medicine:id,name,pack,dosage,image_url',
+            'pharmacy:id,name,area,phone',
+            'assignment.courier',
+            'events',
+            'review',
+        ]);
 
         return view('store.orders.show', compact('order'));
     }
 
-    public function cancel(Order $order)
+    public function cancel(Request $request, Order $order): RedirectResponse
     {
         $this->authorize('cancel', $order);
 
-        $cancelable = [
-            OrderStatus::PENDING_ASSIGNMENT,
-            OrderStatus::ASSIGNED,
-            OrderStatus::REFUSED,
-        ];
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
 
-        if (!in_array($order->status, $cancelable, true)) {
-            return back()->with('error', 'Cette commande ne peut plus être annulée.');
-        }
+        $this->workflow->cancel($order, $request->user(), $validated['reason'] ?? null);
 
-        $this->orderService->cancel($order);
-
-        return back()->with('success', 'Commande annulée.');
+        return back()->with('success', 'Votre commande a été annulée.');
     }
 }

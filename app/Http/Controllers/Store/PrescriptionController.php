@@ -23,12 +23,27 @@ class PrescriptionController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'delivery_phone' => preg_replace('/\s+/', '', (string) $request->delivery_phone),
+        ]);
+
         $data = $request->validate([
-            'prescription'     => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
-            'delivery_address' => ['required', 'string', 'min:5', 'max:255'],
-            'delivery_phone'   => ['required', 'string', 'regex:/^(\+225)?[0-9]{10}$/'],
-            'notes'            => ['nullable', 'string', 'max:500'],
-            'payment_method'   => ['required', 'in:cash,momo,card'],
+            'prescription'         => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:4096'],
+            'delivery_address'     => ['required', 'string', 'min:5', 'max:255'],
+            'delivery_phone'       => ['required', 'string', 'regex:/^(\+225)?[0-9]{10}$/'],
+            // Le client précise s'il veut toute l'ordonnance ou seulement une partie.
+            'prescription_scope'   => ['required', 'in:all,partial'],
+            'prescription_comment' => ['nullable', 'string', 'max:1000', 'required_if:prescription_scope,partial'],
+            'notes'                => ['nullable', 'string', 'max:500'],
+            'payment_method'       => ['required', 'in:cash,momo,card'],
+        ], [
+            'prescription_comment.required_if' => 'Précisez quels médicaments de l\'ordonnance vous souhaitez.',
+        ], [
+            'prescription'         => 'ordonnance',
+            'delivery_address'     => 'adresse de livraison',
+            'delivery_phone'       => 'téléphone',
+            'prescription_scope'   => 'périmètre de la commande',
+            'prescription_comment' => 'précision',
         ]);
 
         $file = $request->file('prescription');
