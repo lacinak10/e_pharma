@@ -6,15 +6,20 @@ use App\Enums\OrderStatus;
 use App\Models\CourierReview;
 use App\Models\Order;
 use App\Models\Pharmacy;
+use App\Support\CompanyProfile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /**
- * Contexte partagé par toute la boutique : panier, commande en cours et
- * preuve sociale de la barre utilitaire.
+ * Contexte partagé par toute la boutique : panier, commande en cours,
+ * preuve sociale de la barre utilitaire et coordonnées de l'entreprise.
  */
 class StoreComposer
 {
+    public function __construct(private CompanyProfile $company)
+    {
+    }
+
     public function compose(View $view): void
     {
         $view->with([
@@ -22,6 +27,7 @@ class StoreComposer
             'currentOrder'  => $this->currentOrder(),
             'storeRating'   => $this->rating(),
             'partnerCount'  => Cache::remember('store.partners.count', 600, fn () => Pharmacy::active()->count()),
+            'company'       => $this->company->current(),
         ]);
     }
 

@@ -103,7 +103,7 @@
                 <p class="ep-small" style="margin:0">
                     Ne jamais associer deux médicaments contenant la même molécule sans avis.
                     En cas de doute sur un dosage, appelez-nous au
-                    <a href="tel:+2252722000000" class="ep-mono">+225 27 22 00 00 00</a>.
+                    <a href="tel:{{ $company['phone_href'] }}" class="ep-mono">{{ $company['phone'] }}</a>.
                 </p>
             </x-ep.card>
         </div>

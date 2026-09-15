@@ -20,7 +20,7 @@
             <span style="width:6px;height:6px;border-radius:50%;background:var(--ep-amber)"></span>
             Disponibilité vérifiée en moins de 5 minutes
         </span>
-        <a href="tel:+2252722000000" class="ep-spacer ep-mono">+225 27 22 00 00 00</a>
+        <a href="tel:{{ $company['phone_href'] }}" class="ep-spacer ep-mono">{{ $company['phone'] }}</a>
     </div>
 </div>
 

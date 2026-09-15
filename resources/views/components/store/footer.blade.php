@@ -7,7 +7,7 @@
                 <div class="ep-row ep-row--nowrap" style="color:#fff;margin-bottom:1rem">
                     <img class="ep-sidebar__mark" src="{{ asset('assets/images/logo-mark.png') }}"
                          alt="" aria-hidden="true" width="30" height="30">
-                    <span class="ep-logo__word">ePharma</span>
+                    <span class="ep-logo__word">{{ $company['name'] }}</span>
                 </div>
                 <p style="font-size:.84375rem;line-height:1.6;margin:0 0 1.25rem;max-width:34ch">
                     La disponibilité vérifiée avant le déplacement.
@@ -46,7 +46,8 @@
                 <div class="ep-footer__links">
                     <a href="{{ route('store.how') }}">FAQ</a>
                     <a href="{{ route('store.partners') }}">Zones et délais de livraison</a>
-                    <a href="tel:+2252722000000">Nous contacter</a>
+                    <a href="tel:{{ $company['phone_href'] }}">Nous appeler</a>
+                    <a href="mailto:{{ $company['email'] }}">Nous écrire</a>
                 </div>
             </div>
 
@@ -61,8 +62,8 @@
         </div>
 
         <div class="ep-footer__bottom">
-            <span>© {{ date('Y') }} ePharma. Les médicaments ne sont pas des produits ordinaires — demandez conseil à un pharmacien.</span>
-            <span class="ep-mono">Abidjan · Côte d'Ivoire</span>
+            <span>© {{ date('Y') }} {{ $company['name'] }}. Les médicaments ne sont pas des produits ordinaires — demandez conseil à un pharmacien.</span>
+            <span class="ep-mono">{{ $company['city'] }}</span>
         </div>
     </div>
 </footer>
