@@ -5,7 +5,8 @@
         <div class="ep-footer__grid">
             <div>
                 <div class="ep-row ep-row--nowrap" style="color:#fff;margin-bottom:1rem">
-                    <span class="ep-sidebar__mark" aria-hidden="true">e</span>
+                    <img class="ep-sidebar__mark" src="{{ asset('assets/images/logo-mark.png') }}"
+                         alt="" aria-hidden="true" width="30" height="30">
                     <span class="ep-logo__word">ePharma</span>
                 </div>
                 <p style="font-size:.84375rem;line-height:1.6;margin:0 0 1.25rem;max-width:34ch">

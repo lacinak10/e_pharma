@@ -411,6 +411,11 @@
     border-bottom: 1px solid var(--ep-rule-soft);
     padding: 1.25rem;
 }
+/* Le lien de la vignette reste en ligne par défaut : sa boîte se limite alors
+   à une ligne de texte (~22 px) alors que l'image, elle, occupe tout le carré.
+   En bloc, la zone cliquable épouse enfin la vignette — au doigt, c'est la
+   différence entre viser le produit et viser un liseré. */
+.ep-product__media > a { display: block; height: 100%; }
 .ep-product__media img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--ep-radius-sm); background: #F6F4EE; }
 .ep-product__rx { position: absolute; top: .625rem; left: .625rem; }
 .ep-product__body { padding: .875rem .875rem 1rem; display: flex; flex-direction: column; flex: 1; gap: .3125rem; }
@@ -585,10 +590,20 @@ a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); 
     }
     .ep-table--cards td:empty { display: none; }
     .ep-table--cards .ep-cell-actions { justify-content: flex-end; flex-wrap: wrap; }
-    /* Un numéro de téléphone ou un montant ne se coupe pas en fin de ligne. */
-    .ep-table--cards td .ep-mono,
+    /* Un montant ne se coupe pas en fin de ligne. En revanche .ep-mono est un
+       utilitaire de police, pas un marqueur de valeur atomique : il habille
+       aussi des dosages, des dates et des slugs, qui doivent pouvoir se
+       replier — sinon la carte déborde de l'écran. */
     .ep-table--cards td .ep-cell-num { white-space: nowrap; }
     .ep-table--cards td > * { min-width: 0; }
+
+    /* En carte, la cellule dispose de toute la largeur : le nowrap des
+       colonnes d'identité n'a plus de raison d'être et forçait la carte à
+       dépasser l'écran (un nom long ne pouvant se couper). On laisse aussi
+       céder les chaînes insécables — e-mail, référence — plutôt que de
+       pousser la carte hors du cadre. */
+    .ep-table--cards .ep-cell-name { white-space: normal; }
+    .ep-table--cards td { overflow-wrap: anywhere; }
 
     /* Une cellule qui porte un formulaire ou un bloc riche ne tient pas dans
        la moitié droite : l'étiquette passe au-dessus et le contenu occupe
@@ -676,9 +691,8 @@ a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); 
 
 .ep-sidebar__brand { padding: 0 1.25rem 1.375rem; display: flex; align-items: center; gap: .625rem; }
 .ep-sidebar__mark {
-    width: 30px; height: 30px; border-radius: 8px; background: var(--ep-green);
-    display: flex; align-items: center; justify-content: center; color: #fff;
-    font-family: var(--ep-font-display); font-weight: 700; font-size: 1.0625rem; flex: none;
+    width: 30px; height: 30px; border-radius: 8px; flex: none;
+    background: #fff; object-fit: contain;
 }
 .ep-sidebar__name { color: #fff; font-family: var(--ep-font-display); font-size: 1rem; font-weight: 700; letter-spacing: -.02em; }
 .ep-sidebar__role { font-family: var(--ep-font-mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ep-dark-muted); }
@@ -767,10 +781,14 @@ a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); 
 
 .ep-logo { display: inline-flex; align-items: center; gap: .625rem; color: var(--ep-ink); }
 .ep-logo:hover { text-decoration: none; color: var(--ep-ink); }
+/* Le symbole du logo est vert : il lui faut une pastille blanche pour rester
+   lisible aussi bien dans l'en-tête clair de la boutique que sur l'encre du
+   bandeau invité. Le filet interne empêche la pastille de se fondre dans un
+   fond blanc. */
 .ep-logo__mark {
-    width: 34px; height: 34px; border-radius: var(--ep-radius); background: var(--ep-green);
-    display: flex; align-items: center; justify-content: center; color: #fff;
-    font-family: var(--ep-font-display); font-weight: 700; font-size: 1.1875rem; flex: none;
+    width: 34px; height: 34px; border-radius: var(--ep-radius); flex: none;
+    background: #fff; object-fit: contain;
+    box-shadow: inset 0 0 0 1px rgba(18, 33, 27, .10);
 }
 .ep-logo__word { font-family: var(--ep-font-display); font-size: 1.4375rem; font-weight: 700; letter-spacing: -.025em; }
 
@@ -899,6 +917,14 @@ a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); 
        automatiquement à la mise au point du champ. */
     .ep-input, .ep-select, .ep-textarea { min-height: 44px; font-size: 1rem; }
     .ep-textarea { min-height: 88px; }
+
+    /* Tout ce qui se touche n'est pas un bouton. Une colonne de liens de pied
+       de page haute de 16 px se rate autant qu'un bouton de 30 px, et un
+       numéro à appeler est le geste le plus direct de la page partenaires.
+       On élargit la zone, jamais la typographie : le rendu ne bouge pas. */
+    .ep-footer__links { gap: .125rem; }
+    .ep-footer__links a { display: flex; align-items: center; min-height: 40px; }
+    a[href^="tel:"] { display: inline-flex; align-items: center; min-height: 40px; }
 }
 
 /* Lisibilité : aucun texte sous 12 px du téléphone à la tablette — y compris

@@ -6,7 +6,8 @@
 
 <aside class="ep-sidebar" data-ep-sidebar data-open="false" aria-label="Navigation principale">
     <div class="ep-sidebar__brand">
-        <span class="ep-sidebar__mark" aria-hidden="true">e</span>
+        <img class="ep-sidebar__mark" src="{{ asset('assets/images/logo-mark.png') }}"
+             alt="" aria-hidden="true" width="30" height="30">
         <div style="min-width:0">
             <p class="ep-sidebar__name">ePharma</p>
             <p class="ep-sidebar__role">{{ $role }}</p>
