@@ -90,27 +90,13 @@
         <div>
             <p class="ep-eyebrow ep-eyebrow--green">Comment ça marche</p>
             <h2 class="ep-h2" style="max-width:24ch;margin-top:.75rem">
-                Cinq étapes, et vous n'avez pas bougé de chez vous.
+                Quatre étapes, et vous n'avez pas bougé de chez vous.
             </h2>
         </div>
         <a href="{{ route('store.how') }}" style="font-size:.90625rem;font-weight:650">Page complète →</a>
     </div>
 
-    <div class="ep-card ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:0">
-        @foreach([
-            ['1', '#0E5C43', 'Je commande', "Recherche, panier, adresse. Ou une simple photo d'ordonnance."],
-            ['2', '#B87514', 'Le manager valide', 'Votre commande est prise en charge et examinée.'],
-            ['3', '#B87514', 'Vérification', 'Les pharmacies partenaires sont contactées. Moins de 5 minutes.'],
-            ['4', '#33557F', 'Un livreur récupère', 'Il se rend à la pharmacie, vérifie, puis part vers vous.'],
-            ['5', '#0E5C43', 'Je note le livreur', 'Une note sur 5 et un commentaire après réception.'],
-        ] as [$n, $color, $title, $text])
-            <div style="padding:1.75rem 1.5rem 1.875rem;border-right:1px solid var(--ep-rule-soft);min-width:0">
-                <p class="ep-display" style="font-size:2.125rem;color:{{ $color }};margin:0">{{ $n }}</p>
-                <p style="font-size:.96875rem;font-weight:650;line-height:1.3;margin:1rem 0 .5rem">{{ $title }}</p>
-                <p class="ep-small">{{ $text }}</p>
-            </div>
-        @endforeach
-    </div>
+    <x-store.journey variant="strip" />
 </section>
 
 {{-- ── Médicaments ────────────────────────────────────────────────── --}}

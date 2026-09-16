@@ -6,7 +6,7 @@
     <section class="ep-shell ep-section">
         <p class="ep-eyebrow ep-eyebrow--green">Comment ça marche</p>
         <h1 class="ep-h1" style="max-width:22ch;margin-top:.75rem">
-            Cinq étapes, et vous n'avez pas bougé de chez vous.
+            Quatre étapes, et vous n'avez pas bougé de chez vous.
         </h1>
         <p class="ep-lead" style="max-width:62ch;margin-top:1.25rem">
             ePharma existe pour une raison simple : trop de patients se déplacent en pharmacie pour découvrir
@@ -16,21 +16,7 @@
     </section>
 
     <section class="ep-shell" style="padding-bottom:clamp(2.5rem,1.5rem + 4vw,5rem)">
-        <div class="ep-grid ep-grid--cards">
-            @foreach([
-                ['1', '#0E5C43', 'Je commande', "Recherche, panier, adresse. Ou une simple photo d'ordonnance."],
-                ['2', '#B87514', 'Le manager valide', 'Votre commande est prise en charge et examinée.'],
-                ['3', '#B87514', 'Vérification', 'Les pharmacies partenaires sont contactées. Moins de 5 minutes.'],
-                ['4', '#33557F', 'Un livreur récupère', 'Il se rend à la pharmacie, vérifie, puis part vers vous.'],
-                ['5', '#0E5C43', 'Je note le livreur', 'Une note sur 5 et un commentaire après réception.'],
-            ] as [$n, $color, $title, $text])
-                <article class="ep-card" style="padding:1.5rem">
-                    <p class="ep-display" style="font-size:2.125rem;color:{{ $color }};margin:0">{{ $n }}</p>
-                    <h2 style="font-size:.96875rem;font-weight:650;line-height:1.3;margin:1rem 0 .5rem">{{ $title }}</h2>
-                    <p class="ep-small" style="margin:0">{{ $text }}</p>
-                </article>
-            @endforeach
-        </div>
+        <x-store.journey />
     </section>
 
     <section style="background:var(--ep-surface);border-block:1px solid var(--ep-rule)">
