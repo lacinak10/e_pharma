@@ -23,6 +23,7 @@ use App\Http\Controllers\Store\CartController;
 use App\Http\Controllers\Store\CheckoutController;
 use App\Http\Controllers\Store\HomeController;
 use App\Http\Controllers\Store\MedicineController;
+use App\Http\Controllers\Store\PaymentController;
 use App\Http\Controllers\Store\OrderController;
 use App\Http\Controllers\Store\PrescriptionController;
 use App\Http\Controllers\Store\ReviewController;
@@ -61,6 +62,10 @@ Route::name('store.')->group(function () {
         // Commande
         Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
         Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+
+        // Règlement en ligne — après le verdict, avant l'attribution du livreur
+        Route::post('/mes-commandes/{order}/payer', [PaymentController::class, 'pay'])->name('payments.pay');
+        Route::get('/mes-commandes/{order}/paiement', [PaymentController::class, 'return'])->name('payments.return');
 
         // Suivi
         Route::get('/mes-commandes', [OrderController::class, 'index'])->name('orders.index');

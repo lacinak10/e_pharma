@@ -88,9 +88,13 @@
                 </div>
 
                 <x-slot:footer>
+                    @php($pending = $order->awaitsComposition())
+
                     <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
                         <span class="ep-small">Sous-total</span>
-                        <span class="ep-mono ep-small">{{ number_format($order->subtotal, 0, ',', ' ') }} F</span>
+                        <span class="ep-mono ep-small">
+                            {{ $pending ? 'panier à composer' : number_format($order->subtotal, 0, ',', ' ') . ' F' }}
+                        </span>
                     </div>
                     <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
                         <span class="ep-small">Livraison</span>
@@ -104,6 +108,28 @@
                         <span class="ep-small">Paiement</span>
                         <span class="ep-small">{{ $order->payment_label }}</span>
                     </div>
+
+                    @if($order->requiresPrepayment())
+                        @php($payment = $order->payment)
+                        <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
+                            <span class="ep-small">Règlement en ligne</span>
+                            @if($payment)
+                                <x-ep.badge :tone="$payment->status->tone()" :label="$payment->status->badge()" />
+                            @else
+                                <x-ep.badge tone="neutral" label="Non demandé" />
+                            @endif
+                        </div>
+                        @if($payment)
+                            <p class="ep-hint ep-mono" style="margin:.375rem 0 0">
+                                {{ $payment->reference }} · {{ $payment->method_label }}
+                            </p>
+                        @endif
+                        @if($payment?->status === \App\Enums\PaymentStatus::REFUNDED)
+                            <p class="ep-small" style="margin:.5rem 0 0">
+                                Remboursement effectué chez GeniusPay.
+                            </p>
+                        @endif
+                    @endif
                 </x-slot:footer>
             </x-ep.card>
 

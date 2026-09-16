@@ -4,18 +4,25 @@ namespace App\Services;
 
 use App\Enums\ItemAvailability;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\CourierReview;
 use App\Models\DeliveryAssignment;
 use App\Models\Medicine;
 use App\Models\Order;
 use App\Models\OrderEvent;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\Pharmacy;
 use App\Models\User;
 use App\Notifications\NewAssignmentNotification;
 use App\Notifications\OrderProgressNotification;
+use App\Notifications\PaymentStatusNotification;
+use App\Services\GeniusPay\GeniusPayClient;
+use App\Services\GeniusPay\GeniusPayException;
 use App\Enums\AssignmentStatus;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -27,6 +34,10 @@ use Illuminate\Validation\ValidationException;
  */
 class OrderWorkflow
 {
+    public function __construct(private GeniusPayClient $geniusPay)
+    {
+    }
+
     // ── Étape 1 → 3 : prise en charge par le manager ─────────────────────
 
     /**
@@ -225,7 +236,7 @@ class OrderWorkflow
     {
         $this->assertStatus($order, [OrderStatus::CHECKING]);
 
-        return DB::transaction(function () use ($order, $manager) {
+        $order = DB::transaction(function () use ($order, $manager) {
             $items = $order->items()->get();
 
             if ($items->isEmpty()) {
@@ -258,6 +269,30 @@ class OrderWorkflow
 
             return $order->refresh();
         });
+
+        /*
+         * Le lien de paiement naît ici, et pas au checkout : avant le verdict,
+         * `total_amount` est indicatif — facturer un médicament qui se révèle
+         * introuvable obligerait à rembourser, geste que l'API Marchand
+         * GeniusPay n'expose pas.
+         *
+         * L'appel réseau est volontairement hors transaction : il ne doit pas
+         * tenir de verrou sur la commande pendant plusieurs secondes. Son échec
+         * ne remet pas le verdict en cause, le lien se régénère à la demande.
+         */
+        if ($order->requiresPrepayment() && $order->status->isVerdictFavorable()) {
+            try {
+                $this->requestPayment($order);
+            } catch (GeniusPayException $e) {
+                Log::channel('geniuspay')->error('Création du lien de paiement en échec', [
+                    'order_id' => $order->id,
+                    'code'     => $e->errorCode,
+                    'message'  => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $order;
     }
 
     // ── Étape 7 : attribution du livreur ─────────────────────────────────
@@ -269,6 +304,14 @@ class OrderWorkflow
 
         if (! $courier->isCourier()) {
             throw ValidationException::withMessages(['courier_id' => "Cet utilisateur n'est pas un livreur."]);
+        }
+
+        // Le livreur avance l'argent en pharmacie : il ne part pas sur une
+        // commande à régler en ligne dont le paiement n'est pas encaissé.
+        if ($order->awaitsPayment()) {
+            throw ValidationException::withMessages([
+                'courier_id' => 'Cette commande se règle en ligne et n\'est pas encore payée.',
+            ]);
         }
 
         return DB::transaction(function () use ($order, $courier, $manager, $etaMinutes) {
@@ -433,6 +476,161 @@ class OrderWorkflow
 
             return $order->refresh();
         });
+    }
+
+    // ── Encaissement en ligne (GeniusPay) ────────────────────────────────
+
+    /**
+     * Demande un lien de paiement pour une commande dont le verdict est rendu.
+     *
+     * Le montant envoyé est figé dans la ligne `payments` : c'est lui, et non
+     * `orders.total_amount`, que le webhook devra retrouver. Le panier n'étant
+     * plus modifiable après le verdict (cf. assertComposable), les deux ne
+     * peuvent plus diverger — mais la vérification reste la bonne discipline.
+     *
+     * @param  bool  $force  régénère un lien même si le précédent est valide
+     *
+     * @throws GeniusPayException
+     */
+    public function requestPayment(Order $order, bool $force = false): ?Payment
+    {
+        if (! $order->requiresPrepayment()) {
+            return null;
+        }
+
+        if ($paid = $order->payments()->completed()->first()) {
+            return $paid;
+        }
+
+        $pending = $order->payments()->awaiting()->first();
+
+        // Un lien encore valide pour le même montant est réutilisé : en créer
+        // un second n'apporterait rien et brouillerait le suivi.
+        if (! $force && $pending?->isUsable() && $pending->amount === (int) $order->total_amount) {
+            return $pending;
+        }
+
+        $data = $this->geniusPay->createPayment($order);
+
+        return DB::transaction(function () use ($order, $data, $pending) {
+            // Le lien remplacé est clos pour que `payment()`, qui retourne le
+            // plus récent, désigne bien celui que le client doit utiliser.
+            $pending?->update([
+                'status' => $pending->expires_at?->isPast() ? PaymentStatus::EXPIRED : PaymentStatus::CANCELLED,
+            ]);
+
+            $payment = $order->payments()->create([
+                'provider'     => 'geniuspay',
+                'reference'    => $data['reference'],
+                'status'       => PaymentStatus::tryFrom($data['status']) ?? PaymentStatus::PENDING,
+                'amount'       => $data['amount'],
+                'currency'     => 'XOF',
+                'method'       => $data['method'],
+                'environment'  => $data['environment'],
+                'checkout_url' => $data['checkout_url'],
+                'expires_at'   => $data['expires_at'] ? Carbon::parse($data['expires_at']) : null,
+            ]);
+
+            $this->record(
+                $order,
+                null,
+                'Lien de paiement en ligne transmis au client (' . number_format($payment->amount, 0, ',', ' ') . ' FCFA).',
+                notify: false,
+            );
+
+            Log::channel('geniuspay')->info('Lien de paiement créé', [
+                'order_id'  => $order->id,
+                'reference' => $payment->reference,
+                'amount'    => $payment->amount,
+            ]);
+
+            return $payment;
+        });
+    }
+
+    /**
+     * Applique le sort d'un paiement — point d'entrée unique du webhook, de la
+     * page de retour et de la réconciliation.
+     *
+     * Idempotent par construction : rejouer un événement ne produit ni seconde
+     * écriture ni doublon dans la timeline, et un paiement encaissé ne redescend
+     * jamais d'un cran (seul un remboursement le fait bouger).
+     *
+     * @param  array{method?: ?string, reason?: ?string, payload?: array<string, mixed>}  $context
+     */
+    public function applyPaymentStatus(Payment $payment, PaymentStatus $status, array $context = []): Payment
+    {
+        return DB::transaction(function () use ($payment, $status, $context) {
+            // Webhook et réconciliation peuvent arriver en même temps.
+            $payment = Payment::whereKey($payment->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($payment->status === $status) {
+                return $payment;
+            }
+
+            if ($payment->isCompleted() && $status !== PaymentStatus::REFUNDED) {
+                Log::channel('geniuspay')->warning('Statut ignoré sur un paiement déjà encaissé', [
+                    'reference' => $payment->reference,
+                    'refused'   => $status->value,
+                ]);
+
+                return $payment;
+            }
+
+            $attributes = ['status' => $status];
+
+            if (array_key_exists('payload', $context)) {
+                $attributes['last_payload'] = $context['payload'];
+            }
+
+            if (! empty($context['method'])) {
+                $attributes['method'] = $context['method'];
+            }
+
+            if ($status === PaymentStatus::COMPLETED) {
+                $attributes['paid_at']        = now();
+                $attributes['failure_reason'] = null;
+            } elseif (! empty($context['reason'])) {
+                $attributes['failure_reason'] = $context['reason'];
+            }
+
+            $payment->update($attributes);
+            $payment->refresh();
+
+            /*
+             * « pending → processing » n'apprend rien à personne : on ne
+             * journalise et ne notifie que les issues, pour ne pas noyer la
+             * timeline client ni le flux « Activité en direct ».
+             */
+            if (! $status->isAwaiting()) {
+                $order = $payment->order;
+
+                $this->record($order, null, $this->paymentMessage($payment), notify: false);
+                $order->client?->notify(new PaymentStatusNotification($payment));
+            }
+
+            Log::channel('geniuspay')->info('Statut de paiement appliqué', [
+                'reference' => $payment->reference,
+                'status'    => $status->value,
+            ]);
+
+            return $payment;
+        });
+    }
+
+    /** Phrase journalisée dans la timeline pour chaque issue de paiement. */
+    private function paymentMessage(Payment $payment): string
+    {
+        $amount = number_format($payment->amount, 0, ',', ' ');
+
+        return match ($payment->status) {
+            PaymentStatus::COMPLETED => "Paiement de {$amount} FCFA confirmé par {$payment->method_label}.",
+            PaymentStatus::REFUNDED  => "Paiement de {$amount} FCFA remboursé au client.",
+            PaymentStatus::FAILED    => 'Paiement refusé' . ($payment->failure_reason ? " : {$payment->failure_reason}" : '.'),
+            PaymentStatus::CANCELLED => 'Paiement interrompu par le client.',
+            PaymentStatus::EXPIRED   => 'Lien de paiement expiré sans règlement.',
+            default                  => "Paiement en cours de traitement ({$amount} FCFA).",
+        };
     }
 
     // ── Interne ──────────────────────────────────────────────────────────

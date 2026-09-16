@@ -51,11 +51,11 @@
                     </div>
                 </x-ep.card>
 
-                <x-ep.card title="Paiement à la livraison">
+                <x-ep.card title="Paiement">
                     <fieldset style="border:0;padding:0;margin:0">
                         <legend class="ep-sr-only">Moyen de paiement</legend>
                         <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:.5rem">
-                            @foreach(['cash' => 'Espèces', 'momo' => 'Mobile Money', 'card' => 'Carte'] as $value => $label)
+                            @foreach(['cash' => 'Espèces à la remise', 'momo' => 'Mobile Money', 'card' => 'Carte bancaire'] as $value => $label)
                                 <label class="ep-choice">
                                     <input type="radio" name="payment_method" value="{{ $value }}"
                                            @checked(old('payment_method', 'cash') === $value)>
@@ -67,7 +67,9 @@
                     </fieldset>
 
                     <p class="ep-hint" style="margin-top:1rem">
-                        Vous ne payez qu'à la remise, après confirmation de disponibilité.
+                        Rien n'est débité maintenant. Après le verdict de disponibilité, vous réglez
+                        en ligne sur la page sécurisée GeniusPay — ou en espèces au livreur.
+                        Le montant demandé ne portera que sur les médicaments réellement trouvés.
                     </p>
                 </x-ep.card>
             </div>

@@ -58,6 +58,31 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        /*
+         * Journal dédié à l'encaissement : création de lien, webhooks reçus,
+         * réconciliation. Séparé de laravel.log pour qu'un incident de
+         * paiement soit lisible sans filtrer le reste de l'application.
+         * Rien d'identifiant n'y est écrit : référence, statut, montant.
+         *
+         * Le canal réel passe par GENIUSPAY_LOG_STACK, que phpunit.xml bascule
+         * sur « null » : la suite de tests ne doit pas remplir le journal qu'on
+         * lira au premier vrai webhook. Les appelants écrivent toujours dans
+         * « geniuspay », sans savoir où ça atterrit.
+         */
+        'geniuspay' => [
+            'driver' => 'stack',
+            'channels' => explode(',', (string) env('GENIUSPAY_LOG_STACK', 'geniuspay_daily')),
+            'ignore_exceptions' => false,
+        ],
+
+        'geniuspay_daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/geniuspay.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

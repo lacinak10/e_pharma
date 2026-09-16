@@ -98,8 +98,10 @@
                     @if($order->collectsCash())
                         <br>À encaisser :
                         <strong class="ep-mono" style="font-size:1rem">{{ number_format($order->total_amount, 0, ',', ' ') }} F</strong>
+                    @elseif($order->isPaid())
+                        <br>Réglé en ligne ({{ $order->payment?->method_label }}) — <strong>ne rien encaisser</strong>.
                     @else
-                        <br>Déjà réglé, rien à encaisser.
+                        <br>Règlement en ligne non confirmé : prévenez le manager avant de partir.
                     @endif
                 </p>
                 @if($order->notes)

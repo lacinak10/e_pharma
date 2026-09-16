@@ -497,6 +497,63 @@ Ces points ne sont pas des vulnérabilités corrigées mais des améliorations �
 
 ---
 
+## Addendum — 13 septembre 2026 : encaissement en ligne GeniusPay
+
+L'intégration de GeniusPay ouvre la **première route publique non authentifiée**
+de l'application. Surface et contre-mesures :
+
+### Nouvelle surface : `POST /api/webhooks/geniuspay`
+
+Hors du groupe `web` (pas de session, pas de CSRF, pas de `EnsureAccountIsActive`).
+Seule la signature du payload authentifie l'appelant.
+
+| Contre-mesure | Mise en œuvre |
+|---|---|
+| Authentification | HMAC-SHA256 sur `timestamp + "." + corps brut`, comparaison `hash_equals` (temps constant). Une seule forme acceptée, vérifiée en sandbox le 13/09/2026 |
+| Anti-rejeu | Fenêtre de 300 s sur `X-Webhook-Timestamp` |
+| Idempotence | Unicité SQL sur `payment_webhook_events.event_id` — le verrou est la base, pas un `SELECT` préalable |
+| Cloisonnement sandbox/live | Le champ `environment` du payload doit égaler `services.geniuspay.environment` ; sinon refus |
+| Intégrité du montant | Comparaison au montant figé dans `payments.amount`, jamais à `orders.total_amount` |
+| Non-régression d'état | Un paiement `completed` ne redescend jamais (seul `refunded` le fait bouger) |
+| Débit | `throttle:60,1` |
+| Fuite d'information | Réponses sans détail ; journal dédié `storage/logs/geniuspay.log` (référence, statut, montant — aucun identifiant client) |
+
+Couverture de test : `tests/Feature/Payment/GeniusPayWebhookTest.php` (9 cas, dont
+signature invalide, horodatage périmé, rejeu, montant divergent, environnement
+discordant) et `tests/Unit/GeniusPay/WebhookSignatureTest.php`.
+
+### Secrets
+
+`GENIUSPAY_API_SECRET` et `GENIUSPAY_WEBHOOK_SECRET` restent côté serveur, absents
+du dépôt (`.env.example` les déclare vides). Aucune clé n'est exposée à une vue.
+
+### Correction connexe — `SESSION_SAME_SITE`
+
+`.env.example` imposait `strict`, ce qui empêche le cookie de session d'accompagner
+un retour de navigation depuis un site tiers : le client revenant de GeniusPay
+serait apparu déconnecté. Ramené à `lax`, le défaut Laravel — les requêtes POST
+cross-site n'emportent toujours pas le cookie, la protection CSRF est intacte.
+
+### Correction connexe — HSTS émis en clair
+
+`SecurityHeaders` posait `Strict-Transport-Security: max-age=31536000; includeSubDomains` sur
+**toute** réponse, y compris en HTTP. La RFC 6797 §8.1 impose au navigateur d'ignorer l'en-tête
+reçu hors TLS : inutile en local, et nuisible derrière un tunnel de développement, où
+`includeSubDomains` épingle en HTTPS pour un an un domaine partagé avec d'autres tunnels.
+L'en-tête est désormais conditionné à `$request->secure()`. Couverture :
+`tests/Feature/SecurityHeadersTest.php`.
+
+### Point ouvert
+
+L'API Marchand GeniusPay n'expose **aucun endpoint de remboursement** (seul
+l'événement `payment.refunded` existe côté webhook). Un remboursement se fait
+donc manuellement depuis le tableau de bord GeniusPay. L'architecture retenue
+limite l'exposition — le paiement n'est demandé qu'après le verdict, donc sur
+un montant définitif — mais une annulation après encaissement reste un geste
+humain à tracer.
+
+---
+
 ## Ressources
 
 - [OWASP Top 10 2021](https://owasp.org/Top10/)

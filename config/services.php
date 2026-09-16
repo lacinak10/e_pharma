@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | GeniusPay — encaissement en ligne (Wave, Orange, MTN, Moov, carte)
+    |--------------------------------------------------------------------------
+    |
+    | `secret` et `webhook_secret` ne doivent jamais sortir du serveur. Le
+    | secret webhook (whsec_...) n'est affiché qu'une fois, à la création du
+    | webhook chez GeniusPay : il n'est plus récupérable ensuite.
+    |
+    */
+
+    'geniuspay' => [
+        'base_url'       => env('GENIUSPAY_BASE_URL', 'https://geniuspay.ci/api/v1/merchant'),
+        'key'            => env('GENIUSPAY_API_KEY'),
+        'secret'         => env('GENIUSPAY_API_SECRET'),
+        'webhook_secret' => env('GENIUSPAY_WEBHOOK_SECRET'),
+        'environment'    => env('GENIUSPAY_ENVIRONMENT', 'sandbox'),
+    ],
+
 ];

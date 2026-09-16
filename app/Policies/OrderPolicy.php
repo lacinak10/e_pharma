@@ -31,6 +31,21 @@ class OrderPolicy
             && $order->status->isCancelableByClient();
     }
 
+    /**
+     * Le client règle en ligne sa commande, une fois le verdict rendu.
+     *
+     * Avant le verdict il n'y a pas de montant ferme à encaisser ; après
+     * l'attribution du livreur, la course est déjà engagée.
+     */
+    public function pay(User $user, Order $order): bool
+    {
+        return $user->isClient()
+            && $order->user_id === $user->id
+            && $order->requiresPrepayment()
+            && $order->status->isVerdictFavorable()
+            && ! $order->isPaid();
+    }
+
     /** Le manager traite la commande : validation, verdict, refus. */
     public function manage(User $user, Order $order): bool
     {
@@ -44,7 +59,7 @@ class OrderPolicy
             return false;
         }
 
-        if (! in_array($order->status, [OrderStatus::AVAILABLE, OrderStatus::PARTIALLY_AVAILABLE], true)) {
+        if (! $order->status->isVerdictFavorable()) {
             return false;
         }
 

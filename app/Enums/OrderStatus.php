@@ -154,6 +154,12 @@ enum OrderStatus: string
         ], true);
     }
 
+    /** Le verdict est rendu et permet d'engager une livraison. */
+    public function isVerdictFavorable(): bool
+    {
+        return in_array($this, [self::AVAILABLE, self::PARTIALLY_AVAILABLE], true);
+    }
+
     /** Une course est en cours chez un livreur. */
     public function isCourierPhase(): bool
     {

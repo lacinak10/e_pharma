@@ -13,8 +13,23 @@
                     {{ $order->client?->short_name }} · {{ $order->delivery_address }}
                     @if($order->pharmacy) · départ {{ $order->pharmacy->name }} @endif
                 </span>
-                <span class="ep-spacer"><x-ep.badge :status="$order->status" /></span>
+                <span class="ep-spacer">
+                    <x-ep.badge :status="$order->status" />
+                    @if($order->requiresPrepayment())
+                        <x-ep.badge :tone="$order->isPaid() ? 'green' : 'amber'"
+                                    :label="$order->isPaid() ? 'Payée en ligne' : 'Paiement en attente'" />
+                    @endif
+                </span>
             </header>
+
+            @if($order->awaitsPayment())
+                {{-- Le livreur avance l'argent en pharmacie : OrderWorkflow refuse
+                     l'attribution tant que l'encaissement n'est pas confirmé. --}}
+                <p class="ep-small" style="padding:.75rem 1.125rem;margin:0;background:#FBF0DC">
+                    Cette commande se règle en ligne et n'est pas encore payée. L'attribution
+                    reste bloquée jusqu'à confirmation de l'encaissement.
+                </p>
+            @endif
 
             <div class="ep-table-wrap">
                 <table class="ep-table ep-table--cards">
@@ -69,7 +84,7 @@
                                                id="eta-{{ $order->id }}-{{ $courier->id }}" type="number" name="eta_minutes"
                                                min="5" max="180" placeholder="min">
                                         <button type="submit" class="ep-btn ep-btn--sm {{ $index === 0 ? 'ep-btn--primary' : 'ep-btn--ghost' }}"
-                                                @disabled($courier->state === 'Indisponible')>Attribuer</button>
+                                                @disabled($courier->state === 'Indisponible' || $order->awaitsPayment())>Attribuer</button>
                                     </form>
                                 </td>
                             </tr>

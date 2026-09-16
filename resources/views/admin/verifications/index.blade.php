@@ -41,6 +41,13 @@
                                         @if($order->has_prescription)
                                             <span class="ep-badge ep-badge--rx">Ordonnance</span>
                                             {{ $order->prescription_scope === 'partial' ? 'partielle' : 'complète' }}
+                                            {{-- Sans panier composé, le client n'a aucun montant :
+                                                 le dire ici évite de laisser filer la commande. --}}
+                                            @if($order->awaitsComposition())
+                                                <strong style="color:var(--ep-amber)">· panier à composer</strong>
+                                            @else
+                                                · {{ $order->items->count() }} article(s)
+                                            @endif
                                         @else
                                             {{ $order->items->count() }} article(s)
                                         @endif

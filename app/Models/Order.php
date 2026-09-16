@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AssignmentStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -133,6 +134,17 @@ class Order extends Model
         return $this->hasOne(CourierReview::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->latest('id');
+    }
+
+    /** La tentative de paiement en cours — la plus récente fait foi. */
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
     public function canceledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'canceled_by')->withTrashed();
@@ -246,6 +258,48 @@ class Order extends Model
     public function collectsCash(): bool
     {
         return $this->payment_method === 'cash';
+    }
+
+    /**
+     * La commande se règle en ligne avant livraison.
+     *
+     * Le paiement n'est demandé qu'après le verdict : avant lui, `total_amount`
+     * est indicatif et serait faussé par toute ligne finalement indisponible.
+     */
+    public function requiresPrepayment(): bool
+    {
+        return in_array($this->payment_method, ['momo', 'card'], true);
+    }
+
+    /** Le montant est encaissé chez GeniusPay. */
+    public function isPaid(): bool
+    {
+        return $this->payments()->completed()->exists();
+    }
+
+    /** La commande attend un règlement en ligne pour pouvoir partir. */
+    public function awaitsPayment(): bool
+    {
+        return $this->requiresPrepayment() && ! $this->isPaid();
+    }
+
+    /** Statut du paiement en cours, ou null si aucun n'a encore été demandé. */
+    public function paymentStatus(): ?PaymentStatus
+    {
+        return $this->payment?->status;
+    }
+
+    /**
+     * Le panier n'a pas encore été composé.
+     *
+     * Une commande sur ordonnance naît sans aucune ligne : afficher
+     * « sous-total 0 F » y présenterait un montant inconnu comme un montant nul.
+     */
+    public function awaitsComposition(): bool
+    {
+        return $this->relationLoaded('items')
+            ? $this->items->isEmpty()
+            : ! $this->items()->exists();
     }
 
     /** Le client a-t-il déjà noté son livreur ? */

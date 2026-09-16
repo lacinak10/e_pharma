@@ -4,12 +4,15 @@ namespace App\Models;
 
 use App\Enums\ItemAvailability;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Medicine extends Model
 {
+    use HasFactory;
+
     /** Packshots libres de droit servant de repli quand aucune image n'est renseignée. */
     private const FALLBACK_IMAGES = [
         'medicaments.jpg', 'blister.jpg', 'comprimes.jpg', 'gelules.jpg',

@@ -123,9 +123,15 @@
                 </div>
 
                 <x-slot:footer>
+                    {{-- Une ordonnance arrive sans ligne : tant que le manager n'a pas
+                         composé le panier, le montant est inconnu, pas nul. --}}
+                    @php($pending = $order->awaitsComposition())
+
                     <div class="ep-row ep-row--nowrap" style="justify-content:space-between">
                         <span class="ep-small">Sous-total</span>
-                        <span class="ep-mono ep-small">{{ number_format($order->subtotal, 0, ',', ' ') }} F</span>
+                        <span class="ep-mono ep-small">
+                            {{ $pending ? 'à établir' : number_format($order->subtotal, 0, ',', ' ') . ' F' }}
+                        </span>
                     </div>
                     <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
                         <span class="ep-small">Livraison</span>
@@ -133,12 +139,52 @@
                     </div>
                     <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.625rem;padding-top:.625rem;border-top:1px solid var(--ep-rule)">
                         <strong style="font-size:.9375rem">Total</strong>
-                        <strong class="ep-mono" style="font-size:1.0625rem">{{ number_format($order->total_amount, 0, ',', ' ') }} F</strong>
+                        <strong class="ep-mono" style="font-size:1.0625rem">
+                            {{ $pending ? 'à établir' : number_format($order->total_amount, 0, ',', ' ') . ' F' }}
+                        </strong>
                     </div>
+                    @if($pending)
+                        <p class="ep-hint" style="margin:.5rem 0 0">
+                            Le manager lit votre ordonnance et compose votre panier.
+                            Le montant s'affichera ici dès qu'il sera établi.
+                        </p>
+                    @endif
                     <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
                         <span class="ep-small">Paiement</span>
                         <span class="ep-small">{{ $order->payment_label }}</span>
                     </div>
+
+                    {{-- Règlement en ligne. Libellés et couleurs viennent de
+                         PaymentStatus : aucune correspondance locale ici. --}}
+                    @if($order->requiresPrepayment())
+                        @php($payment = $order->payment)
+
+                        <div class="ep-row ep-row--nowrap" style="justify-content:space-between;margin-top:.375rem">
+                            <span class="ep-small">État du règlement</span>
+                            @if($payment)
+                                <x-ep.badge :tone="$payment->status->tone()" :label="$payment->status->badge()" />
+                            @else
+                                <x-ep.badge tone="neutral" label="Après le verdict" />
+                            @endif
+                        </div>
+
+                        @if($payment)
+                            <p class="ep-small" style="margin:.625rem 0 0">{{ $payment->status->label() }}</p>
+                        @endif
+
+                        @can('pay', $order)
+                            <form method="POST" action="{{ route('store.payments.pay', $order) }}" style="margin-top:.875rem">
+                                @csrf
+                                <button type="submit" class="ep-btn ep-btn--primary ep-btn--block">
+                                    {{ $payment?->status->isRetryable() ? 'Reprendre le paiement' : 'Payer maintenant' }} ·
+                                    {{ number_format($order->total_amount, 0, ',', ' ') }} F
+                                </button>
+                            </form>
+                            <p class="ep-hint" style="margin:.5rem 0 0">
+                                Wave, Orange Money, MTN, Moov ou carte — le choix se fait sur la page sécurisée GeniusPay.
+                            </p>
+                        @endcan
+                    @endif
                 </x-slot:footer>
             </x-ep.card>
 

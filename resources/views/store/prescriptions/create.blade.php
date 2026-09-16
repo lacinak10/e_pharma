@@ -110,11 +110,11 @@
                 </x-ep.card>
 
                 {{-- 4. Le paiement --}}
-                <x-ep.card title="4. Paiement à la livraison">
+                <x-ep.card title="4. Paiement">
                     <fieldset style="border:0;padding:0;margin:0">
                         <legend class="ep-sr-only">Moyen de paiement</legend>
                         <div class="ep-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:.5rem">
-                            @foreach(['cash' => 'Espèces', 'momo' => 'Mobile Money', 'card' => 'Carte'] as $value => $label)
+                            @foreach(['cash' => 'Espèces à la remise', 'momo' => 'Mobile Money', 'card' => 'Carte bancaire'] as $value => $label)
                                 <label class="ep-choice">
                                     <input type="radio" name="payment_method" value="{{ $value }}"
                                            @checked(old('payment_method', 'cash') === $value)>
@@ -124,6 +124,11 @@
                         </div>
                         <x-input-error :messages="$errors->get('payment_method')" class="ep-error" />
                     </fieldset>
+
+                    <p class="ep-hint" style="margin-top:1rem">
+                        Rien n'est débité maintenant : le manager compose d'abord votre panier
+                        d'après l'ordonnance, puis vous réglez le montant confirmé.
+                    </p>
                 </x-ep.card>
             </div>
 
