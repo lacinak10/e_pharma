@@ -198,16 +198,56 @@ manager — le livreur y garde ses préférences.
 
 ### Système de design
 
-`public/assets/css/epharma-ds.css` (~930 lignes, classes `ep-*`) + composants Blade
+`public/assets/css/epharma-ds.css` (~970 lignes, classes `ep-*`) + composants Blade
 `resources/views/components/ep/*` (badge, card, chrono, timeline, product-card, rating-form…).
 Les layouts `store`, `admin` et `guest` posent `class="ep-root"` sur `<html>` et `<body>`.
 
 Une couleur ne fait jamais deux métiers : vert `#0E5C43` = action/confirmé, ambre `#B87514` =
 attente, rouge `#A6382F` = indisponible, bleu `#33557F` = livreur en mouvement, neutre = clos.
 
-**Piège de spécificité :** `.ep-root a` colore tous les liens en vert. Les variantes de bouton
-sont donc doublement qualifiées `.ep-root .ep-btn--primary` — sinon un `<a>` stylé en bouton
-affiche du texte vert sur fond vert. Garder ce doublement pour toute nouvelle variante.
+Ces teintes sont **calibrées pour du texte sur fond clair**. Sur l'encre du back-office elles
+tombent sous le seuil de lisibilité — le rouge de marque plafonne à 2,7:1 et vire au brun. Les
+fonds sombres ont donc leurs propres jetons : `--ep-green-soft`, `--ep-amber-soft`. Reprendre
+une couleur vive telle quelle sur `--ep-dark` est presque toujours une erreur ; vérifier le
+ratio avant.
+
+Le logo de l'application est `public/assets/images/logo.jpeg`, affiché tel quel partout
+(en-tête, pied de page, barre latérale, bandeau invité, favicon, icône iOS, partage social).
+Voir `public/assets/images/IMAGES.md`.
+
+**Piège de spécificité :** `.ep-root a` (0-1-1) colore tous les liens en vert et l'emporte sur
+toute règle à classe unique (0-1-0) — y compris au survol, où `.ep-root a:hover` (0-2-1) bat
+`.ep-xxx__link:hover` (0-2-0). Tout composant dont l'élément est un `<a>` doit donc être
+**doublement qualifié** : `.ep-root .ep-btn--primary`, `.ep-root .ep-nav__link`. Sans cela un
+`<a>` stylé en bouton affiche du texte vert sur fond vert, et les entrées du menu latéral
+héritaient du vert de marque à 2,2:1 sur l'encre.
+
+Une règle qualifiée par un attribut (`.ep-nav__link[aria-current="page"]`, 0-2-0) gagne déjà :
+c'est pourquoi seule l'entrée active s'affichait correctement.
+
+**Restent non corrigés**, sur fond clair donc lisibles mais pas à la couleur déclarée :
+`.ep-mainnav__link`, `.ep-account__link`, `.ep-pager__link`. Les aligner changerait l'aspect
+de la boutique — décision produit, pas nettoyage.
+
+### Le parcours client est déclaré une fois
+
+`resources/views/components/store/journey.blade.php` porte les **quatre étapes** annoncées au
+client : panier ou ordonnance → paiement en ligne → validation de la commande → livraison.
+L'accueil et « Comment ça marche » en avaient chacun une copie et pouvaient donc annoncer deux
+parcours différents ; ils rendent désormais le même composant, seul le gabarit change
+(`variant="strip"` pour la bande de l'accueil, défaut pour les cartes de la page complète).
+
+Les mentions de « cinq étapes » qui subsistent dans ces pages désignent le **suivi de
+livraison** (en route vers la pharmacie, arrivé, récupéré, en route, livré), pas le parcours de
+commande : elles sont justes, ne pas les « corriger ».
+
+**Écart assumé :** la vitrine place le paiement en étape 2, avant la validation, alors que le
+code ne crée le lien de paiement qu'**après** le verdict (`OrderWorkflow::settleVerdict()`) et
+qu'aucun règlement n'est possible au checkout. C'est un choix de formulation commerciale — ne
+pas remanier `OrderWorkflow` pour faire coïncider le code avec cette page, la raison d'être de
+l'ordre actuel est expliquée plus haut (montant indicatif avant verdict, remboursement
+impossible via l'API). La page ne mentionne pas non plus le paiement en espèces, qui reste
+possible.
 
 ### Contexte partagé des vues
 
@@ -215,16 +255,20 @@ affiche du texte vert sur fond vert. Garder ce doublement pour toute nouvelle va
 - remplace les vues de pagination de Laravel (écrites pour Tailwind) par `vendor.pagination.epharma` ;
 - attache `StoreComposer` à une **liste explicite** de vues (`layouts.store`, `store.*`,
   `components.store.*`, `components.ep.*`) qui fournit `$cartCount`, `$currentOrder`,
-  `$storeRating`, `$partnerCount`. Les vues enfants étant rendues avant le layout, une nouvelle
-  vue boutique hors de ces motifs n'aura pas ces variables — étendre la liste.
+  `$storeRating`, `$partnerCount`, `$company`. Les vues enfants étant rendues avant le
+  layout, une nouvelle vue boutique hors de ces motifs n'aura pas ces variables — étendre
+  la liste.
 
 `App\Support\BackOfficeNavigation` construit le menu latéral et ses compteurs (cache 15 s).
 
 ## Tests
 
-Couverte : l'échafaudage Breeze (auth, profil) **et l'encaissement en ligne**
-(`tests/Feature/Payment/`, `tests/Unit/GeniusPay/` — 25 cas). **Toujours non couverts : le
-cycle de vie logistique des commandes, les étapes livreur et les policies.**
+66 cas au total. Couverts : l'échafaudage Breeze (auth, profil), **l'encaissement en ligne**
+(`tests/Feature/Payment/`, `tests/Unit/GeniusPay/` — 25 cas), le numéro de commande
+(`OrderReferenceTest`), les coordonnées de l'entreprise (`CompanySettingsTest`, qui vérifie
+aussi qu'un livreur ne peut pas les réécrire) et les en-têtes de sécurité
+(`SecurityHeadersTest`). **Toujours non couverts : le cycle de vie logistique des commandes,
+les étapes livreur et les policies.**
 
 Factories : `User`, `Medicine`, `Order`, `Payment`. `Category` n'a pas `HasFactory` — la
 créer avec `Category::firstOrCreate()` dans un test qui a besoin d'un médicament.
@@ -233,6 +277,6 @@ créer avec `Category::firstOrCreate()` dans un test qui a besoin d'un médicame
 
 - `COMPTES.md` — les 10 comptes de test (mot de passe `password` : `manager@epharma.test`,
   `livreur@epharma.test`, `client@epharma.test`…), source de vérité `database/seeders/UserSeeder.php`
-- `public/assets/images/IMAGES.md` — provenance des visuels libres de droit
+- `public/assets/images/IMAGES.md` — provenance des visuels libres de droit et emploi du logo
 - `security-audit-OWASP-2026-03-22.md` — audit OWASP corrigé le 22 mars 2026, addendum GeniusPay du 13 septembre 2026
 - `README.md` — **boilerplate Laravel non modifié**, aucune information sur le projet
