@@ -14,12 +14,10 @@
 <title>{{ $epTitle }}</title>
 <meta name="description" content="{{ $epDescription }}">
 
-{{-- Icônes : la pastille (le symbole seul) reste lisible à 16 px, là où le
-     lockup complet — nom et accroche compris — ne serait qu'une tache. --}}
-<link rel="icon" type="image/png" href="{{ asset('assets/images/logo-mark.png') }}?v={{ $epVersion }}">
-<link rel="apple-touch-icon" href="{{ asset('assets/images/logo-apple-touch.png') }}?v={{ $epVersion }}">
+{{-- Icônes et partage : le logo de la marque, tel quel. --}}
+<link rel="icon" type="image/jpeg" href="{{ asset('assets/images/logo.jpeg') }}?v={{ $epVersion }}">
+<link rel="apple-touch-icon" href="{{ asset('assets/images/logo.jpeg') }}?v={{ $epVersion }}">
 
-{{-- Partage social : là, au contraire, le lockup complet porte le nom et la promesse. --}}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ePharma">
 <meta property="og:locale" content="fr_CI">

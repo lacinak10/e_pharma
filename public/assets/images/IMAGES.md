@@ -21,9 +21,9 @@ Attribués de façon déterministe via `User::getAvatarUrlAttribute()` (`id % 8`
 
 | Fichier | Rôle |
 |---|---|
-| `logo.jpeg` | Lockup complet (symbole + « E.PHARMA MOBILE » + accroche), fourni par la marque. Sert à la carte de partage social (`og:image`, `twitter:image`). |
-| `logo-mark.png` | La pastille seule : le symbole détouré du lockup, recadré sur fond blanc, 256 px. C'est la marque affichée dans l'interface (en-tête boutique, pied de page, barre latérale, bandeau invité) et la favicon. |
-| `logo-apple-touch.png` | La même pastille en 180 px, pour l'icône d'écran d'accueil iOS. |
+| `logo.jpeg` | Lockup complet (symbole + « E.PHARMA MOBILE » + accroche), fourni par la marque. C'est **le** logo de l'application : en-tête boutique, pied de page, barre latérale, bandeau invité, favicon, icône iOS et carte de partage social. |
+| `logo-mark.png` | La pastille seule : le symbole détouré du lockup, recadré sur fond blanc, 256 px. **Actuellement inutilisée** — l'interface affiche le lockup complet. |
+| `logo-apple-touch.png` | La même pastille en 180 px. **Inutilisée** elle aussi. |
 
 Les deux PNG sont **dérivés** de `logo.jpeg` — ils ne sont pas des originaux.
 Pour les régénérer après un changement de logo :
@@ -37,9 +37,9 @@ convert logo.jpeg -crop 84x95+208+126 +repage \
 convert logo-mark.png -resize 180x180 -strip logo-apple-touch.png
 ```
 
-Le lockup complet reste illisible en dessous de ~120 px : c'est pourquoi
-l'interface et la favicon montrent la pastille, jamais `logo.jpeg`.
-Après remplacement, incrémenter `asset_version` dans `config/app.php`.
+Les deux PNG restent disponibles si l'on veut un jour une marque compacte :
+le lockup, chargé de texte, perd sa lisibilité en dessous de ~120 px.
+Après remplacement d'un visuel, incrémenter `asset_version` dans `config/app.php`.
 
 ## `carte-abidjan.svg` — création originale
 Carte stylisée d'Abidjan (lagune Ébrié, quartiers, pins des livreurs),

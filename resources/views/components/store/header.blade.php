@@ -27,7 +27,7 @@
 <header class="ep-header">
     <div class="ep-shell ep-header__inner">
         <a href="{{ route('store.home') }}" class="ep-logo">
-            <img class="ep-logo__mark" src="{{ asset('assets/images/logo-mark.png') }}"
+            <img class="ep-logo__mark" src="{{ asset('assets/images/logo.jpeg') }}"
                  alt="" aria-hidden="true" width="34" height="34">
             <span class="ep-logo__word">ePharma</span>
         </a>

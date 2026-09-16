@@ -10,7 +10,7 @@
         <header style="background:var(--ep-ink);padding:.875rem 0">
             <div class="ep-shell">
                 <a href="{{ route('store.home') }}" class="ep-logo" style="color:#fff">
-                    <img class="ep-logo__mark" src="{{ asset('assets/images/logo-mark.png') }}"
+                    <img class="ep-logo__mark" src="{{ asset('assets/images/logo.jpeg') }}"
                          alt="" aria-hidden="true" width="34" height="34">
                     <span class="ep-logo__word" style="color:#fff">ePharma</span>
                 </a>
