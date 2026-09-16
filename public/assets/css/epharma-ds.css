@@ -15,6 +15,7 @@
     --ep-amber-deep: #7A4E0B;
     --ep-red: #A6382F;          /* indisponible, refus */
     --ep-red-deep: #8E2F27;
+    --ep-amber-soft: #F0B44A;   /* ambre pour fond sombre — cf. --ep-green-soft */
     --ep-blue: #33557F;         /* livreur en mouvement */
     --ep-ink: #12211B;          /* texte, back-office */
 
@@ -706,6 +707,14 @@ a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); 
     border-left: 3px solid transparent;
 }
 .ep-nav__link:hover { color: #fff; background: rgba(255, 255, 255, .04); text-decoration: none; }
+/* Piège de spécificité, le même que pour les boutons : `.ep-root a` (0-1-1)
+   l'emporte sur `.ep-nav__link` (0-1-0), et sur `.ep-nav__link:hover` (0-2-0)
+   via `.ep-root a:hover` (0-2-1). Sans double qualification, les entrées du
+   menu héritaient du vert de marque — calibré pour du texte sur fond clair —
+   et tombaient à 2,2:1 sur l'encre de la barre. L'entrée active, elle, est
+   qualifiée par un attribut et gagnait déjà. */
+.ep-root .ep-nav__link { color: var(--ep-dark-text); }
+.ep-root .ep-nav__link:hover { color: #fff; }
 .ep-nav__link[aria-current="page"] {
     color: #fff; font-weight: 700; background: var(--ep-dark-2); border-left-color: var(--ep-green-soft);
 }
@@ -716,7 +725,11 @@ a.ep-pager__link:hover { border-color: var(--ep-green); color: var(--ep-green); 
     background: #22332C; color: #9DB0A8;
     display: flex; align-items: center; justify-content: center;
 }
-.ep-nav__count--urgent { background: var(--ep-red); color: #fff; }
+/* Le rouge de marque est calibré pour du texte sur fond clair : posé sur
+   l'encre de la barre il tombe à 2,7:1 et vire au brun, illisible. L'ambre est
+   de toute façon la bonne couleur ici — ces compteurs disent « en attente de
+   toi », pas « indisponible » — et le ton clair ressort à 9,6:1 sur l'encre. */
+.ep-nav__count--urgent { background: var(--ep-amber-soft); color: var(--ep-ink); font-weight: 600; }
 .ep-nav__section { padding: 1rem 1.25rem .375rem; font-family: var(--ep-font-mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ep-dark-muted); }
 
 .ep-sidebar__user { margin-top: auto; padding: 1.25rem 1.25rem 0; border-top: 1px solid var(--ep-dark-3); }
