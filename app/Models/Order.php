@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AssignmentStatus;
 use App\Enums\OrderStatus;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class Order extends Model
     public const CHECK_DURATION_SECONDS = 300;
 
     protected $fillable = [
+        'reference',
         'user_id',
         'pharmacy_id',
         'status',
@@ -62,6 +64,34 @@ class Order extends Model
         'delivered_at'        => 'datetime',
         'has_prescription'    => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order): void {
+            $order->reference ??= static::nextReference();
+        });
+    }
+
+    /**
+     * « CMD-20260904-0001 » — séquence remise à zéro chaque jour.
+     *
+     * Le LIKE préfixé s'appuie sur l'index unique de `reference`. Le
+     * lockForUpdate sérialise deux commandes nées dans la même seconde ;
+     * l'index unique reste le garde-fou si l'appel a lieu hors transaction.
+     */
+    public static function nextReference(?\DateTimeInterface $date = null): string
+    {
+        $prefix = 'CMD-' . ($date ? Carbon::instance($date) : now())->format('Ymd') . '-';
+
+        $last = static::query()
+            ->where('reference', 'like', $prefix . '%')
+            ->lockForUpdate()
+            ->max('reference');
+
+        $sequence = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
+
+        return $prefix . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+    }
 
     // ── Relations ────────────────────────────────────────────────────────
 
@@ -184,12 +214,6 @@ class Order extends Model
     }
 
     // ── Présentation ─────────────────────────────────────────────────────
-
-    /** « CMD-20482 » */
-    public function getReferenceAttribute(): string
-    {
-        return 'CMD-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
-    }
 
     public function getStatusLabelAttribute(): string
     {
